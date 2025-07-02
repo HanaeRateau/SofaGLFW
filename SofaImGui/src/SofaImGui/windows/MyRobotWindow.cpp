@@ -104,6 +104,32 @@ void MyRobotWindow::addSetting(const Setting &setting, const std::string &group)
     }
 }
 
+void MyRobotWindow::addAction(const Action& action, const std::string& group)
+{
+    bool found = false;
+    for (auto& s : m_actionGroups)
+    {
+        if (s.description.find(group) != std::string::npos)
+        {
+            found = true;
+            s.actions.push_back(action);
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        ActionGroup s;
+        s.description = group;
+        s.actions.push_back(action);
+
+        if (isInEmptyGroup(group))
+            m_actionGroups.insert(m_actionGroups.begin(), s);
+        else
+            m_actionGroups.push_back(s);
+    }
+}
+
 void MyRobotWindow::showWindow(const ImGuiWindowFlags &windowFlags)
 {
     if (enabled() && isOpen())
@@ -201,6 +227,40 @@ void MyRobotWindow::showWindow(const ImGuiWindowFlags &windowFlags)
                     ImGui::LocalEndCollapsingHeader();
                 }
             }
+
+            if (!m_actionGroups.empty())
+            {
+                if (ImGui::LocalBeginCollapsingHeader("Actions", ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    std::string groups;
+                    int k = 0;
+                    for (auto& group : m_actionGroups)
+                    {
+                        ImGui::PushID(k++);
+                        if (!isInEmptyGroup(group.description))
+                        {
+                            ImGui::TextDisabled("%s", group.description.c_str());
+                            ImGui::Indent();
+                        }
+
+                        for (auto& action : group.actions)
+                        {
+                            ImGui::AlignTextToFramePadding();
+                            ImGui::Text("%s", action.description.c_str());
+                            ImGui::SameLine();
+
+                            showAction(action);
+                        }
+
+                        if (!isInEmptyGroup(group.description))
+                            ImGui::Unindent();
+
+                        ImGui::PopID();
+                    }
+                    ImGui::LocalEndCollapsingHeader();
+                }
+            }
+
         }
         ImGui::End();
     }
@@ -227,6 +287,22 @@ bool MyRobotWindow::showSliderDouble(const std::string& name, double* v, const d
         hasValueChanged=true;
 
     return hasValueChanged;
+}
+
+void MyRobotWindow::showAction(const Action &action)
+{
+    bool hasValueChanged = false;
+    float width = ImGui::CalcTextSize(action.description.c_str()).x + ImGui::GetFrameHeight() / 2 + ImGui::GetStyle().ItemSpacing.x * 2;
+    ImVec2 buttonSize(width, ImGui::GetFrameHeight());
+
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+    if (ImGui::Button(action.description.c_str(), buttonSize))
+    {
+        action.callback();
+    }
+    ImGui::SetItemTooltip(action.description.c_str());
+
+    ImGui::PopStyleColor();
 }
 
 }

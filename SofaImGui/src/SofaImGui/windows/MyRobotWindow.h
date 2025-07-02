@@ -60,17 +60,30 @@ class SOFAIMGUI_API MyRobotWindow : public BaseWindow
         std::vector<Setting> settings;
     };
 
+    struct Action {
+        std::string description;
+        std::function<void()> callback;
+    };
+
+    struct ActionGroup {
+        std::string description;
+        std::vector<Action> actions;
+    };
+
     void clearWindow() override;
     void addInformation(const Information &info, const std::string &group);
     void addSetting(const Setting &setting, const std::string &group);
+    void addAction(const Action& action, const std::string &group);
 
    protected:
 
     std::vector<InformationGroup> m_informationGroups;
     std::vector<SettingGroup> m_settingGroups;
+    std::vector<ActionGroup> m_actionGroups;
 
     bool isInEmptyGroup(const std::string &group);
     bool showSliderDouble(const std::string &name, double* v, const double& min, const double& max, const int nbIndents);
+    void showAction(const Action& action);
 };
 
 }

@@ -63,6 +63,41 @@ void addSetting(std::shared_ptr<ImGuiGUIEngine> engine, const std::string &descr
     }
 }
 
+void callPythonFuntion(const py::object& instance, const std::string& ptyhonFunctionName)
+{
+    sofapython3::PythonEnvironment::executePython([instance, ptyhonFunctionName]() {
+        std::string name = ptyhonFunctionName;
+        msg_warning("Binding_MyRobotWindow") << name << " is it in " << instance.is_none();
+        /// Is there a method with this name in the class ?
+        if (py::hasattr(instance, name.c_str()))
+        {
+            msg_warning("Binding_MyRobotWindow") << name << " is in ";
+            py::object fct = instance.attr(name.c_str());
+            if (PyCallable_Check(fct.ptr())) {
+                msg_warning("Binding_MyRobotWindow") << name << " is callable";
+                if (py::hasattr(instance, ptyhonFunctionName.c_str()))
+                {
+                    fct();
+                }
+                return;
+            }
+        }
+        });
+}
+
+void addAction(std::shared_ptr<ImGuiGUIEngine> engine, const std::string& description, const py::object &instance, const std::string& ptyhonFunctionName, const std::string& group)
+{
+
+    if (engine)
+    {
+        windows::MyRobotWindow::Action action;
+        action.description = description;
+        action.callback = [instance, ptyhonFunctionName]() {callPythonFuntion(instance, ptyhonFunctionName);};
+
+        engine->m_myRobotWindow.addAction(action, group);
+    }
+}
+
 void moduleAddMyRobotWindow(py::module &m)
 {
     ImGuiGUI* gui = ImGuiGUI::getGUI();
@@ -94,6 +129,13 @@ void moduleAddMyRobotWindow(py::module &m)
             addSetting(engine, description, data, min, max, group);
         }, "Add a setting to the window."
         );
+
+    m_a.def("addActionInGroup",
+        [engine](const std::string& description, py::object instance, const std::string& ptyhonFunctionName, const std::string& group)
+        {
+            addAction(engine, description, instance, ptyhonFunctionName, group);
+        }, "Add a button to the window that triggeres an action."
+    );
 }
 
 }

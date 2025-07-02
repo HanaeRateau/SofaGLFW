@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <sofa/helper/logging/Messaging.h>
+
 #include <SofaImGui/config.h>
 #include <SofaImGui/ImGuiGUIEngine.h>
 
@@ -38,6 +40,12 @@ void addSetting(std::shared_ptr<ImGuiGUIEngine> engine,
                 sofa::core::BaseData* data,
                 double min, double max,
                 const std::string &group=windows::MyRobotWindow::DEFAULTGROUP);
+
+void addAction(std::shared_ptr<ImGuiGUIEngine> engine, 
+                const std::string& description,
+                const pybind11::object& instance = pybind11::globals()["__name__"],
+                const std::string& ptyhonFunctionName="",
+                const std::string& group = windows::MyRobotWindow::DEFAULTGROUP);
 
 void moduleAddMyRobotWindow(pybind11::module &m);
 
