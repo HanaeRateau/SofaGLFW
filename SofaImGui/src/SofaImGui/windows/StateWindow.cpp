@@ -98,8 +98,8 @@ void StateWindow::showWindow()
                     ImGui::EndTable();
                 }
             }
-            ImGui::End();
         }
+        ImGui::End();
         ImGui::PopStyleColor();
     }
 }

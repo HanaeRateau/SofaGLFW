@@ -107,13 +107,16 @@ protected:
     std::unique_ptr<sofa::gl::FrameBufferObject> m_fbo;
     std::pair<unsigned int, unsigned int> m_currentFBOSize;
 
-    std::vector<std::reference_wrapper<windows::BaseWindow>> m_windows{ m_viewportWindow, 
-                                                                        m_sceneGraphWindow, 
-                                                                        m_logWindow, m_IOWindow, 
-                                                                        m_programWindow, 
-                                                                        m_plottingWindow, 
-                                                                        m_myRobotWindow, 
-                                                                        m_moveWindow};
+    std::vector<std::reference_wrapper<windows::BaseWindow>> m_windows{
+                                                                        m_IOWindow,
+                                                                        m_programWindow,
+                                                                        m_myRobotWindow,
+                                                                        m_moveWindow,
+                                                                        m_plottingWindow,
+                                                                        m_viewportWindow,
+                                                                        m_sceneGraphWindow,
+                                                                        m_logWindow,
+    };
 
     CSimpleIniA iniGUISettings;
     CSimpleIniA iniProject;
