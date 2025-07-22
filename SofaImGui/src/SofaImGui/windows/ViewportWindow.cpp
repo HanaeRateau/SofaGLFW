@@ -29,6 +29,7 @@ namespace sofaimgui::windows {
 ViewportWindow::ViewportWindow(const std::string& name, const bool& isWindowOpen, std::shared_ptr<StateWindow> stateWindow)
     : m_stateWindow(stateWindow)
 {
+    m_defaultIsOpen = true;
     m_name = name;
     m_isOpen = isWindowOpen;
 }

@@ -44,6 +44,7 @@ namespace sofaimgui::windows {
 
 LogWindow::LogWindow(const std::string& name, const bool& isWindowOpen)
 {
+    m_defaultIsOpen = false;
     m_name = name;
     m_isOpen = isWindowOpen;
     m_isDrivingSimulation = false;

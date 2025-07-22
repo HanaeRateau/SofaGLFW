@@ -777,20 +777,21 @@ void ImGuiGUIEngine::loadSimulation(const bool& reload, const std::string& filen
     m_stateWindow->setSimulationState(m_simulationState);
     m_sceneFilename = filename;
 
-    if (sofa::helper::system::FileSystem::exists(sofaimgui::AppIniFile::getProjectFile(m_baseGUI->getFilename())))
+    // Set enable the right windows basesd on file
+    for (const auto& window : m_windows)
     {
-        SI_Error rc = iniProject.LoadFile(sofaimgui::AppIniFile::getProjectFile(m_baseGUI->getFilename()).c_str());
-        SOFA_UNUSED(rc);
-        assert(rc == SI_OK);
+        window.get().setOpen(window.get().getDefaultIsOpen());
 
-        // Set enable the right windows basesd on file
-        for (const auto& window : m_windows)
+        if (sofa::helper::system::FileSystem::exists(sofaimgui::AppIniFile::getProjectFile(m_baseGUI->getFilename())))
         {
-            std::string name = "Window." + window.get().getName();
-            if (iniProject.KeyExists(name.c_str(), "open"))
-                window.get().setOpen(iniProject.GetBoolValue(name.c_str(), "open"));
-        }
+            SI_Error rc = iniProject.LoadFile(sofaimgui::AppIniFile::getProjectFile(m_baseGUI->getFilename()).c_str());
+            SOFA_UNUSED(rc);
+            assert(rc == SI_OK);
 
+                std::string name = "Window." + window.get().getName();
+                if (iniProject.KeyExists(name.c_str(), "open"))
+                    window.get().setOpen(iniProject.GetBoolValue(name.c_str(), "open"));
+        }
     }
     initDockSpace(true);
 }
