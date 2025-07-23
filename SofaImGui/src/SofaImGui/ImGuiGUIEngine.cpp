@@ -106,7 +106,7 @@ namespace sofaimgui
 void ImGuiGUIEngine::saveSettings()
 {
     const std::string settingsFile = sofaimgui::AppIniFile::getSettingsIniFile();
-    msg_info("") << "Saving application settings in " << settingsFile;
+    FooterStatusBar::getInstance().setTempMessage("Saving application settings in " + settingsFile);
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     iniGUISettings.SetDoubleValue("Window", "width", viewport->Size.x);
@@ -118,7 +118,7 @@ void ImGuiGUIEngine::saveSettings()
 void ImGuiGUIEngine::saveProject()
 {
     const std::string projectFile = sofaimgui::AppIniFile::getProjectFile(m_sceneFilename);
-    msg_info("") << "Saving project in " << projectFile;
+    FooterStatusBar::getInstance().setTempMessage("Saving project in " + projectFile);
 
     // Save windows settings in project file
     for (const auto& window : m_windows)
@@ -739,6 +739,13 @@ void ImGuiGUIEngine::key_callback(GLFWwindow* window, int key, int scancode, int
             if (action == GLFW_PRESS && isCtrlKeyPressed && isShiftKeyPressed)
             {
                 m_programWindow.exportProgram(false);
+            }
+        }
+        else if (strcmp(keyName, "s") == 0)
+        {
+            if (action == GLFW_PRESS && isCtrlKeyPressed)
+            {
+                saveProject();
             }
         }
     }

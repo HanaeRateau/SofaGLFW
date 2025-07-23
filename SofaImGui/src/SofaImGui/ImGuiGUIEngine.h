@@ -79,6 +79,8 @@ public:
 
     void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) override;
 
+    void saveProject();
+
     void setIPController(sofa::simulation::Node::SPtr groot,
                          softrobotsinverse::solver::QPInverseProblemSolver::SPtr solver,
                          sofa::core::behavior::BaseMechanicalState::SPtr TCPTargetMechanical,
@@ -130,7 +132,6 @@ protected:
     void applyDarkMode(const bool &darkMode, sofaglfw::SofaGLFWBaseGUI* baseGUI=nullptr);
 
     void saveSettings();
-    void saveProject();
     void loadSimulation(const bool& reload, const std::string &filename);
     void clearGUI();
     void setDockSizeFromFile(const ImGuiID& id);
