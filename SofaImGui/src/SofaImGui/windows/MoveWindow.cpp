@@ -34,6 +34,7 @@ namespace sofaimgui::windows {
 MoveWindow::MoveWindow(const std::string& name,
                          const bool& isWindowOpen)
 {
+    m_defaultIsOpen = true;
     m_name = name;
     m_isOpen = isWindowOpen;
     m_isDrivingSimulation = true;

@@ -37,6 +37,7 @@ namespace sofaimgui::windows {
 PlottingWindow::PlottingWindow(const std::string& name,
                                const bool& isWindowOpen)
 {
+    m_defaultIsOpen = true;
     m_name = name;
     m_isOpen = isWindowOpen;
 }

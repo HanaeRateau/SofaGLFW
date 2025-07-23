@@ -30,6 +30,7 @@ namespace sofaimgui::windows {
 
 SceneGraphWindow::SceneGraphWindow(const std::string& name, const bool& isWindowOpen)
 {
+    m_defaultIsOpen = false;
     m_name = name;
     m_isOpen = isWindowOpen;
 }

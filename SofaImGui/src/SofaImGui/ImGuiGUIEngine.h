@@ -79,6 +79,8 @@ public:
 
     void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) override;
 
+    void saveProject();
+
     void setIPController(sofa::simulation::Node::SPtr groot,
                          softrobotsinverse::solver::QPInverseProblemSolver::SPtr solver,
                          sofa::core::behavior::BaseMechanicalState::SPtr TCPTargetMechanical,
@@ -102,14 +104,27 @@ public:
     windows::MoveWindow         m_moveWindow         = windows::MoveWindow("       Move", true);
 
 
+
 protected:
     std::unique_ptr<sofa::gl::FrameBufferObject> m_fbo;
     std::pair<unsigned int, unsigned int> m_currentFBOSize;
 
-    CSimpleIniA ini;
+    std::vector<std::reference_wrapper<windows::BaseWindow>> m_windows{
+                                                                        m_IOWindow,
+                                                                        m_programWindow,
+                                                                        m_myRobotWindow,
+                                                                        m_moveWindow,
+                                                                        m_plottingWindow,
+                                                                        m_viewportWindow,
+                                                                        m_sceneGraphWindow,
+                                                                        m_logWindow,
+    };
+
+    CSimpleIniA iniGUISettings;
+    CSimpleIniA iniProject;
 
     void showFrameOnViewport(sofaglfw::SofaGLFWBaseGUI *baseGUI);
-    void initDockSpace();
+    void initDockSpace(const bool& firstTime);
     void showViewportWindow(sofaglfw::SofaGLFWBaseGUI* baseGUI);
     void showOptionWindows(sofaglfw::SofaGLFWBaseGUI* baseGUI);
     void showMainMenuBar(sofaglfw::SofaGLFWBaseGUI* baseGUI);
@@ -119,6 +134,7 @@ protected:
     void saveSettings();
     void loadSimulation(const bool& reload, const std::string &filename);
     void clearGUI();
+    void setDockSizeFromFile(const ImGuiID& id);
 
     models::IPController::SPtr m_IPController;
     models::SimulationState m_simulationState;
@@ -126,6 +142,8 @@ protected:
     int m_mode{0};
     bool m_darkMode{false};
     sofaglfw::SofaGLFWBaseGUI* m_baseGUI{nullptr};
+    std::vector<ImGuiID> m_dockIDs;
+    std::string m_sceneFilename;
 };
 
 } // namespace sofaimgui

@@ -29,6 +29,7 @@ namespace sofaimgui::windows {
 ViewportWindow::ViewportWindow(const std::string& name, const bool& isWindowOpen, std::shared_ptr<StateWindow> stateWindow)
     : m_stateWindow(stateWindow)
 {
+    m_defaultIsOpen = true;
     m_name = name;
     m_isOpen = isWindowOpen;
 }
@@ -118,14 +119,14 @@ bool ViewportWindow::addStepButton()
                         isItemClicked = true;
                     ImGui::PopItemFlag();
                     ImGui::SetItemTooltip("One step of simulation");
-                    ImGui::End();
                 }
+                ImGui::End();
                 ImGui::PopStyleColor();
 
                 ImGui::EndChild();
             }
-            ImGui::End();
         }
+        ImGui::End();
     }
 
     return isItemClicked;
@@ -161,14 +162,14 @@ bool ViewportWindow::addAnimateButton(bool *animate)
                         isItemClicked = true;
                     }
 
-                    ImGui::End();
                 }
+                ImGui::End();
                 ImGui::PopStyleColor();
 
                 ImGui::EndChild();
             }
-            ImGui::End();
         }
+        ImGui::End();
     }
 
     return isItemClicked;
@@ -203,14 +204,14 @@ bool ViewportWindow::addDrivingTabCombo(int *mode, const char *listModes[], cons
                     ImGui::PopItemWidth();
                     ImGui::SetItemTooltip("Choose a window to drive the TCP target");
 
-                    ImGui::End();
                 }
+                ImGui::End();
                 ImGui::PopStyleColor();
 
                 ImGui::EndChild();
             }
-            ImGui::End();
         }
+        ImGui::End();
     }
 
     return hasValueChanged;

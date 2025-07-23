@@ -110,8 +110,8 @@ void FooterStatusBar::showTempMessageOnStatusBar()
 
                 ImGui::EndMenuBar();
             }
-            ImGui::End();
         }
+        ImGui::End();
     }
 }
 

@@ -52,6 +52,7 @@ using sofa::type::Quat;
 ProgramWindow::ProgramWindow(const std::string& name,
                              const bool& isWindowOpen)
 {
+    m_defaultIsOpen = true;
     m_name = name;
     m_isOpen = isWindowOpen;
 }

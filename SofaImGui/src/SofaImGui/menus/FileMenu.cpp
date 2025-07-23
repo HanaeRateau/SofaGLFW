@@ -158,6 +158,11 @@ bool FileMenu::addImportExportProgram()
     if (!engine)
         return false;
 
+    if (ImGui::MenuItem("Save Project", "Ctrl+S"))
+    {
+        engine->saveProject();
+    }
+
     if (!engine->m_programWindow.enabled())
         ImGui::BeginDisabled();
 
