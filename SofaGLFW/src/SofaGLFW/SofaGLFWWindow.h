@@ -54,24 +54,24 @@ public:
     enum CameraAlignement{TOP, BOTTOM, LEFT, RIGHT, FRONT, BACK};
 
     struct GridSquareSize{
-        constexpr static float METER = 0.1;
-        constexpr static float DECIMETER = 1;
-        constexpr static float CENTIMETER = 10;
-        constexpr static float MILLIMETER = 100;
+        constexpr static float DOTONE = 0.1;
+        constexpr static float ONE = 1;
+        constexpr static float TEN = 10;
+        constexpr static float HUNDRED = 100;
 
-        static sofa::type::vector<float> getSquareSizes() {return sofa::type::vector{METER, DECIMETER, CENTIMETER, MILLIMETER};}
+        static sofa::type::vector<float> getSquareSizes() {return sofa::type::vector{DOTONE, ONE, TEN, HUNDRED};}
         static std::string getString(const float& squareSize)
         {
-            if (squareSize == METER)
+            if (squareSize == DOTONE)
                 return "0.1";
 
-            if (squareSize == DECIMETER)
+            if (squareSize == ONE)
                 return "1";
 
-            if (squareSize == CENTIMETER)
+            if (squareSize == TEN)
                 return "10";
 
-            if (squareSize == MILLIMETER)
+            if (squareSize == HUNDRED)
                 return "100";
 
             return "";

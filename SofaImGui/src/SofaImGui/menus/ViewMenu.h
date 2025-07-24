@@ -40,7 +40,7 @@ class ViewMenu
 
    protected:
 
-    void showGrid(const bool& show, const float &squareSize, const float &thickness);
+    void showGrid(const bool& show, const float &squareSize, const float &thickness, const sofa::type::RGBAColor& color);
     void showOriginFrame(const bool& show);
     void showBoundingBox(const bool& show);
 

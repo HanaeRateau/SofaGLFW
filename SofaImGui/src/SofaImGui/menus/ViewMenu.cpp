@@ -87,7 +87,7 @@ void ViewMenu::addMenu(const std::pair<unsigned int, unsigned int>& fboSize,
     }
 }
 
-void ViewMenu::showGrid(const bool& show, const float& squareSize, const float &thickness)
+void ViewMenu::showGrid(const bool& show, const float& squareSize, const float& thickness, const sofa::type::RGBAColor& color)
 {
     const auto& groot = m_baseGUI->getRootNode();
     if (groot)
@@ -117,12 +117,12 @@ void ViewMenu::showGrid(const bool& show, const float& squareSize, const float &
             newGrid->d_size.setValue(gridSize);
             newGrid->d_thickness.setValue(thickness);
             newGrid->d_nbSubdiv.setValue(gridSize / squareSize);
+            newGrid->d_color.setValue(color);
             newGrid->init();
         }
         else
         {
             grid->d_enable.setValue(show);
-            grid->d_nbSubdiv.setValue(gridSize / squareSize);
         }
     }
 
@@ -185,17 +185,17 @@ void ViewMenu::addViewport()
         if (ImGui::BeginMenu("Grid"))
         {
             static bool show01 = false;
-            if (ImGui::LocalCheckBox(std::string("Square size: " + SofaGLFWWindow::GridSquareSize::getString(SofaGLFWWindow::GridSquareSize::METER)).c_str(), &show01))
-                showGrid(show01, SofaGLFWWindow::GridSquareSize::METER, 0.1f);
+            if (ImGui::LocalCheckBox(std::string("Square size: " + SofaGLFWWindow::GridSquareSize::getString(SofaGLFWWindow::GridSquareSize::DOTONE)).c_str(), &show01))
+                showGrid(show01, SofaGLFWWindow::GridSquareSize::DOTONE, 1.f, sofa::type::RGBAColor::fromFloat(0.5f, 0.5f, 0.5f, 0.5f));
             static bool show1 = false;
-            if (ImGui::LocalCheckBox(std::string("Square size: " + SofaGLFWWindow::GridSquareSize::getString(SofaGLFWWindow::GridSquareSize::DECIMETER)).c_str(), &show1))
-                showGrid(show1, SofaGLFWWindow::GridSquareSize::DECIMETER, 0.5f);
+            if (ImGui::LocalCheckBox(std::string("Square size: " + SofaGLFWWindow::GridSquareSize::getString(SofaGLFWWindow::GridSquareSize::ONE)).c_str(), &show1))
+                showGrid(show1, SofaGLFWWindow::GridSquareSize::ONE, 1.f, sofa::type::RGBAColor::fromFloat(0.5f, 0.5f, 0.5f, 0.75f));
             static bool show10 = false;
-            if (ImGui::LocalCheckBox(std::string("Square size: " + SofaGLFWWindow::GridSquareSize::getString(SofaGLFWWindow::GridSquareSize::CENTIMETER)).c_str(), &show10))
-                showGrid(show10, SofaGLFWWindow::GridSquareSize::CENTIMETER, 1.f);
+            if (ImGui::LocalCheckBox(std::string("Square size: " + SofaGLFWWindow::GridSquareSize::getString(SofaGLFWWindow::GridSquareSize::TEN)).c_str(), &show10))
+                showGrid(show10, SofaGLFWWindow::GridSquareSize::TEN, 1.f, sofa::type::RGBAColor::fromFloat(0.5f, 0.5f, 0.5f, 1.f));
             static bool show100 = false;
-            if (ImGui::LocalCheckBox(std::string("Square size: " + SofaGLFWWindow::GridSquareSize::getString(SofaGLFWWindow::GridSquareSize::MILLIMETER)).c_str(), &show100))
-                showGrid(show100, SofaGLFWWindow::GridSquareSize::MILLIMETER, 2.f);
+            if (ImGui::LocalCheckBox(std::string("Square size: " + SofaGLFWWindow::GridSquareSize::getString(SofaGLFWWindow::GridSquareSize::HUNDRED)).c_str(), &show100))
+                showGrid(show100, SofaGLFWWindow::GridSquareSize::HUNDRED, 2.f, sofa::type::RGBAColor::fromFloat(0.5f, 0.5f, 0.5f, 1.f));
 
             ImGui::EndMenu();
         }
