@@ -205,6 +205,7 @@ void ImGuiGUIEngine::init()
 
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
+    io.IniFilename = nullptr; // prevent imgui from exporting imgui.ini file
 
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
