@@ -285,8 +285,7 @@ void ImGuiGUIEngine::startFrame(sofaglfw::SofaGLFWBaseGUI* baseGUI)
     {
         firstTime = false;
         m_baseGUI = baseGUI;
-
-        loadSimulation(true, m_baseGUI->getFilename());        
+        enableWindows();
     }
     else
     {
@@ -786,8 +785,12 @@ void ImGuiGUIEngine::loadSimulation(const bool& reload, const std::string& filen
     m_IOWindow.setSimulationState(m_simulationState);
     m_stateWindow->setSimulationState(m_simulationState);
     m_sceneFilename = filename;
+    enableWindows();
+}
 
-    // Set enable the right windows basesd on file
+void ImGuiGUIEngine::enableWindows()
+{
+    // Enable the windows based on file
     for (const auto& window : m_windows)
     {
         window.get().setOpen(window.get().getDefaultIsOpen());
@@ -798,9 +801,9 @@ void ImGuiGUIEngine::loadSimulation(const bool& reload, const std::string& filen
             SOFA_UNUSED(rc);
             assert(rc == SI_OK);
 
-                std::string name = "Window." + window.get().getName();
-                if (iniProject.KeyExists(name.c_str(), "open"))
-                    window.get().setOpen(iniProject.GetBoolValue(name.c_str(), "open"));
+            std::string name = "Window." + window.get().getName();
+            if (iniProject.KeyExists(name.c_str(), "open"))
+                window.get().setOpen(iniProject.GetBoolValue(name.c_str(), "open"));
         }
     }
     initDockSpace(true);
