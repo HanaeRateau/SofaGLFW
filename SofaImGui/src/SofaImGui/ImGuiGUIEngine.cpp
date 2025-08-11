@@ -118,7 +118,7 @@ void ImGuiGUIEngine::saveSettings()
 
 void ImGuiGUIEngine::saveProject()
 {
-    const std::string projectFile = sofaimgui::AppIniFile::getProjectFile(m_sceneFilename);
+    const std::string projectFile = sofaimgui::AppIniFile::getProjectFile(m_baseGUI->getFilename());
     FooterStatusBar::getInstance().setTempMessage("Saving project in " + projectFile);
 
     // Save windows settings in project file
@@ -353,7 +353,6 @@ void ImGuiGUIEngine::afterDraw()
 void ImGuiGUIEngine::terminate()
 {
     saveSettings();
-    saveProject();
     NFD_Quit();
 
 #if SOFAIMGUI_FORCE_OPENGL2 == 1
@@ -784,7 +783,6 @@ void ImGuiGUIEngine::loadSimulation(const bool& reload, const std::string& filen
     Utils::loadSimulation(m_baseGUI, reload, filename);
     m_IOWindow.setSimulationState(m_simulationState);
     m_stateWindow->setSimulationState(m_simulationState);
-    m_sceneFilename = filename;
     enableWindows();
 }
 

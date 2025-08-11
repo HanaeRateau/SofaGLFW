@@ -144,7 +144,6 @@ protected:
     bool m_darkMode{false};
     sofaglfw::SofaGLFWBaseGUI* m_baseGUI{nullptr};
     std::vector<ImGuiID> m_dockIDs;
-    std::string m_sceneFilename;
 };
 
 } // namespace sofaimgui
