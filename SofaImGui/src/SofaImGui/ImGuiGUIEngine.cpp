@@ -285,6 +285,8 @@ void ImGuiGUIEngine::startFrame(sofaglfw::SofaGLFWBaseGUI* baseGUI)
     {
         firstTime = false;
         m_baseGUI = baseGUI;
+        m_IOWindow.setSimulationState(m_simulationState);
+        m_stateWindow->setSimulationState(m_simulationState);
         enableWindows();
     }
     else
