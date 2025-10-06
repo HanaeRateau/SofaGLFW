@@ -79,7 +79,6 @@
 #include <sofa/helper/io/STBImage.h>
 #include <sofa/helper/system/PluginManager.h>
 #include <sofa/simulation/Node.h>
-#include <sofa/simulation/graph/DAGNode.h>
 
 #include <clocale>
 
@@ -220,10 +219,10 @@ void ImGuiGUIEngine::initBackend(GLFWwindow* glfwWindow)
                     {
                         constexpr long margin = 5; // avoid the case where the window is positioned on the border of the monitor (almost invisible/non-selectable)
 
-                        if(windowPosX  > (monitorXPos) &&
-                           windowPosX  < (monitorXPos + monitorWidth-margin) &&
-                           windowPosY  > (monitorYPos) &&
-                           windowPosY  < (monitorYPos + monitorHeight-margin))
+                        if(windowPosX  >= (monitorXPos) &&
+                           windowPosX  <= (monitorXPos + monitorWidth-margin) &&
+                           windowPosY  >= (monitorYPos) &&
+                           windowPosY  <= (monitorYPos + monitorHeight-margin))
                         {
                             glfwSetWindowPos(glfwWindow, static_cast<int>(windowPosX), static_cast<int>(windowPosY));
                             foundValidMonitor = true;
@@ -269,7 +268,7 @@ void ImGuiGUIEngine::initBackend(GLFWwindow* glfwWindow)
     }
 }
 
-void ImGuiGUIEngine::loadFile(sofaglfw::SofaGLFWBaseGUI* baseGUI, sofa::core::sptr<sofa::simulation::Node>& groot, const std::string filePathName)
+void ImGuiGUIEngine::loadFile(sofaglfw::SofaGLFWBaseGUI* baseGUI, sofa::core::sptr<sofa::simulation::Node>& groot, const std::string filePathName, bool reload)
 {
     sofa::simulation::node::unload(groot);
 
@@ -280,19 +279,22 @@ void ImGuiGUIEngine::loadFile(sofaglfw::SofaGLFWBaseGUI* baseGUI, sofa::core::sp
     baseGUI->setWindowTitle(nullptr, std::string("SOFA - " + filePathName).c_str());
     
     sofa::simulation::node::initRoot(groot.get());
-    auto camera = baseGUI->findCamera(groot);
+    auto camera = baseGUI->getCamera();
     if (camera)
     {
         camera->fitBoundingBox(groot->f_bbox.getValue().minBBox(), groot->f_bbox.getValue().maxBBox());
         baseGUI->changeCamera(camera);
     }
 
-    baseGUI->initVisual();
+    if(reload)
+        sofa::simulation::node::initTextures(groot.get()); // do not override OpenGL lights
+    else
+        baseGUI->initVisual();
     
     resetCounter();
 
     // update camera if a sidecar file is present
-    baseGUI->restoreCamera(baseGUI->findCamera(groot));
+    baseGUI->restoreCamera(baseGUI->getCamera());
 }
 
 void ImGuiGUIEngine::resetCounter()
@@ -365,7 +367,6 @@ void ImGuiGUIEngine::startFrame(sofaglfw::SofaGLFWBaseGUI* baseGUI)
     static constexpr auto windowNameMouse = ICON_FA_COMPUTER_MOUSE "  Mouse Manager";
     static constexpr auto windowNameSettings = ICON_FA_SLIDERS "  Settings";
 
-
     if (!*firstRunState.getStatePtr())
     {
         resetView(dockspace_id, windowNameSceneGraph, windowNameLog, windowNameViewport);
@@ -435,19 +436,19 @@ void ImGuiGUIEngine::startFrame(sofaglfw::SofaGLFWBaseGUI* baseGUI)
                 {
                     if (helper::system::FileSystem::exists(outPath))
                     {
-                        loadFile(baseGUI, groot, outPath);
+                        loadFile(baseGUI, groot, outPath, false);
                     }
                     NFD_FreePath(outPath);
                 }
             }
 
-            const auto filename = baseGUI->getFilename();
+            const auto filename = baseGUI->getSceneFileName();
             if (ImGui::MenuItem(ICON_FA_ROTATE_RIGHT "  Reload File"))
             {
                 if (!filename.empty() && helper::system::FileSystem::exists(filename))
                 {
                     msg_info("GUI") << "Reloading file " << filename;
-                    loadFile(baseGUI, groot, filename);
+                    loadFile(baseGUI, groot, filename, true);
                 }
             }
             if (ImGui::IsItemHovered())
@@ -498,7 +499,7 @@ void ImGuiGUIEngine::startFrame(sofaglfw::SofaGLFWBaseGUI* baseGUI)
                 }
             }
 
-            const std::string viewFileName = baseGUI->getFilename() + std::string(baseGUI->getCameraFileExtension());
+            const std::string viewFileName = baseGUI->getSceneFileName() + std::string(baseGUI->getCameraFileExtension());
             if (ImGui::MenuItem(ICON_FA_CAMERA ICON_FA_ARROW_RIGHT"  Save Camera"))
             {
                 sofa::component::visual::BaseCamera::SPtr camera;
@@ -531,7 +532,7 @@ void ImGuiGUIEngine::startFrame(sofaglfw::SofaGLFWBaseGUI* baseGUI)
             {
                 nfdchar_t *outPath;
                 std::array<nfdfilteritem_t, 1> filterItem{ {"Image", "jpg,png"} };
-                const auto sceneFilename = baseGUI->getFilename();
+                const auto sceneFilename = baseGUI->getSceneFileName();
                 std::string baseFilename{};
                 if (!sceneFilename.empty())
                 {
@@ -633,7 +634,7 @@ void ImGuiGUIEngine::startFrame(sofaglfw::SofaGLFWBaseGUI* baseGUI)
         if (ImGui::Button(ICON_FA_ROTATE_RIGHT))
         {
             groot->setTime(0.);
-            sofa::simulation::node::reset ( groot.get() );
+            loadFile(baseGUI, groot, baseGUI->getSceneFileName(), true);
         }
 
         const auto posX = ImGui::GetCursorPosX();
@@ -651,7 +652,7 @@ void ImGuiGUIEngine::startFrame(sofaglfw::SofaGLFWBaseGUI* baseGUI)
             if (showFPSInMenuBar)
                 position -= ImGui::CalcTextSize("1000.0 FPS ").x;
             ImGui::SetCursorPosX(position);
-            ImGui::TextDisabled("Time: %.3f", groot->getTime());
+            ImGui::Text("Time: %.3f", groot->getTime());
             ImGui::SetCursorPosX(posX);
         }
         mainMenuBarSize = ImGui::GetWindowSize();
@@ -667,9 +668,9 @@ void ImGuiGUIEngine::startFrame(sofaglfw::SofaGLFWBaseGUI* baseGUI)
     /***************************************
      * Viewport window
      **************************************/
-    showViewPort(groot, windowNameViewport, ini, m_fbo, m_viewportWindowSize,
-                 isMouseOnViewport, winManagerViewPort, baseGUI,
-                 isViewportDisplayedForTheFirstTime, lastViewPortPos);
+    windows::showViewPort(groot, windowNameViewport, ini, m_fbo, m_viewportWindowSize,
+                          isMouseOnViewport, winManagerViewPort, baseGUI,
+                          isViewportDisplayedForTheFirstTime, lastViewPortPos);
 
 
     /***************************************
@@ -692,7 +693,15 @@ void ImGuiGUIEngine::startFrame(sofaglfw::SofaGLFWBaseGUI* baseGUI)
      **************************************/
     static std::set<core::objectmodel::BaseObject*> openedComponents;
     static std::set<core::objectmodel::BaseObject*> focusedComponents;
-    windows::showSceneGraph(groot, windowNameSceneGraph, openedComponents, focusedComponents, winManagerSceneGraph);
+    static std::set<core::objectmodel::Base*> currentSelection;
+    windows::showSceneGraph(groot, windowNameSceneGraph, openedComponents,
+                            focusedComponents, currentSelection,
+                            winManagerSceneGraph);
+
+    std::set<core::objectmodel::Base::SPtr> currentSelectionV;
+    for(auto component : currentSelection)
+        currentSelectionV.insert(component);
+    baseGUI->setCurrentSelection(currentSelectionV);
 
     /***************************************
      * Display flags window
@@ -810,28 +819,34 @@ void ImGuiGUIEngine::afterDraw()
 
 void ImGuiGUIEngine::terminate()
 {
-    // store window state (position and size)
-    const auto lastWindowPos = ImGui::GetMainViewport()->Pos;
-    const auto lastWindowSize = ImGui::GetMainViewport()->Size;
-    
-    // save latest window state
-    ini.SetLongValue("Window", "windowPosX", static_cast<long>(lastWindowPos.x));
-    ini.SetLongValue("Window", "windowPosY", static_cast<long>(lastWindowPos.y));
-    ini.SetLongValue("Window", "windowSizeX", static_cast<long>(lastWindowSize.x));
-    ini.SetLongValue("Window", "windowSizeY", static_cast<long>(lastWindowSize.y));
-    [[maybe_unused]] SI_Error rc = ini.SaveFile(sofaimgui::AppIniFile::getAppIniFile().c_str());
-        
-    NFD_Quit();
+    if (!this->isTerminated())
+    {
+        // store window state (position and size)
+        const auto lastWindowPos = ImGui::GetMainViewport()->Pos;
+        const auto lastWindowSize = ImGui::GetMainViewport()->Size;
+
+        // save latest window state
+        ini.SetLongValue("Window", "windowPosX", static_cast<long>(lastWindowPos.x));
+        ini.SetLongValue("Window", "windowPosY", static_cast<long>(lastWindowPos.y));
+        ini.SetLongValue("Window", "windowSizeX", static_cast<long>(lastWindowSize.x));
+        ini.SetLongValue("Window", "windowSizeY", static_cast<long>(lastWindowSize.y));
+        [[maybe_unused]] SI_Error rc = ini.SaveFile(sofaimgui::AppIniFile::getAppIniFile().c_str());
+
+        NFD_Quit();
 
 #if SOFAIMGUI_FORCE_OPENGL2 == 1
-    ImGui_ImplOpenGL2_Shutdown();
+        ImGui_ImplOpenGL2_Shutdown();
 #else
-    ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplOpenGL3_Shutdown();
 #endif // SOFAIMGUI_FORCE_OPENGL2 == 1
 
-    ImGui_ImplGlfw_Shutdown();
-    ImPlot::DestroyContext();
-    ImGui::DestroyContext();
+        ImGui_ImplGlfw_Shutdown();
+        ImPlot::DestroyContext();
+        ImGui::DestroyContext();
+
+        m_isTerminated = true;
+
+    }
 }
 
 bool ImGuiGUIEngine::dispatchMouseEvents()

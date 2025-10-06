@@ -77,7 +77,7 @@ SofaGLFWBaseGUI::~SofaGLFWBaseGUI()
 
 core::sptr<Node> SofaGLFWBaseGUI::getRootNode() const
 {
-    return m_groot;
+    return this->groot;
 }
 
 bool SofaGLFWBaseGUI::init(int nbMSAASamples)
@@ -124,55 +124,38 @@ void SofaGLFWBaseGUI::setErrorCallback() const
 
 void SofaGLFWBaseGUI::setSimulation(NodeSPtr groot, const std::string& filename)
 {
-    m_groot = groot;
-    m_filename = filename;
+    this->groot = groot;
+    this->sceneFileName = filename;
 
     VisualParams::defaultInstance()->drawTool() = m_glDrawTool;
     sofa::core::visual::VisualParams::defaultInstance()->setSupported(sofa::core::visual::API_OpenGL);
 
-    if (m_groot) {
+    if (this->groot)
+    {
         // Initialize the pick handler
-        this->pick->init(m_groot.get());
+        this->pick->init(this->groot.get());
         m_sofaGLFWMouseManager.setPickHandler(getPickHandler());
     }
 }
 
 void SofaGLFWBaseGUI::setSimulationIsRunning(bool running)
 {
-    if (m_groot)
+    if (this->groot)
     {
-        m_groot->setAnimate(running);
+        this->groot->setAnimate(running);
     }
 }
 
 
 bool SofaGLFWBaseGUI::simulationIsRunning() const
 {
-    if (m_groot)
+    if (this->groot)
     {
-        return m_groot->getAnimate();
+        return this->groot->getAnimate();
     }
 
     return false;
 }
-
-BaseCamera::SPtr SofaGLFWBaseGUI::findCamera(NodeSPtr groot)
-{
-    BaseCamera::SPtr camera;
-    groot->get(camera);
-    if (!camera)
-    {
-        camera = sofa::core::objectmodel::New<InteractiveCamera>();
-        camera->setName(Base::shortName(camera.get()));
-        m_groot->addObject(camera);
-        camera->bwdInit();
-    }
-
-    camera->setBoundingBox(m_groot->f_bbox.getValue().minBBox(), m_groot->f_bbox.getValue().maxBBox());
-
-    return camera;
-}
-
 
 void SofaGLFWBaseGUI::setSizeW(int width)
 {
@@ -222,7 +205,7 @@ void SofaGLFWBaseGUI::restoreCamera(BaseCamera::SPtr camera)
 {
     if (camera)
     {
-        const std::string viewFileName = this->getFilename() + std::string(this->getCameraFileExtension());
+        const std::string viewFileName = this->getSceneFileName() + std::string(this->getCameraFileExtension());
         if (helper::system::FileSystem::isFile(viewFileName))
         {
             if (camera->importParametersFromFile(viewFileName))
@@ -258,7 +241,7 @@ bool SofaGLFWBaseGUI::createWindow(int width, int height, const char* title, boo
 {
     m_guiEngine->init();
 
-    if (m_groot == nullptr)
+    if (this->groot == nullptr)
     {
         msg_error("SofaGLFWBaseGUI") << "No simulation root has been defined. Quitting.";
         return false;
@@ -318,9 +301,7 @@ bool SofaGLFWBaseGUI::createWindow(int width, int height, const char* title, boo
 
         m_guiEngine->initBackend(glfwWindow);
 
-        auto camera = findCamera(m_groot);
-
-        SofaGLFWWindow* sofaWindow = new SofaGLFWWindow(glfwWindow, camera);
+        SofaGLFWWindow* sofaWindow = new SofaGLFWWindow(glfwWindow, this->currentCamera);
 
         s_mapWindows[glfwWindow] = sofaWindow;
         s_mapGUIs[glfwWindow] = this;
@@ -480,7 +461,7 @@ void SofaGLFWBaseGUI::makeCurrentContext(GLFWwindow* glfwWindow)
 
 std::size_t SofaGLFWBaseGUI::runLoop(std::size_t targetNbIterations)
 {
-    if (!m_groot)
+    if (!this->groot)
     {
         msg_error("SofaGLFWBaseGUI") << "Cannot start main loop: root node is invalid";
         return 0;
@@ -506,12 +487,15 @@ std::size_t SofaGLFWBaseGUI::runLoop(std::size_t targetNbIterations)
             if (glfwWindow && sofaGlfwWindow)
             {
                 // while user did not request to close this window (i.e press escape), draw
-                if (!glfwWindowShouldClose(glfwWindow))
+                if (!glfwWindowShouldClose(glfwWindow) && !m_guiEngine->isTerminated())
                 {
                     makeCurrentContext(glfwWindow);
                     
                     m_guiEngine->beforeDraw(glfwWindow);
-                    sofaGlfwWindow->draw(m_groot, m_vparams);
+                    sofaGlfwWindow->draw(this->groot, m_vparams);
+
+                    drawSelection(m_vparams);
+
                     m_guiEngine->afterDraw();
 
                     m_guiEngine->startFrame(this);
@@ -536,6 +520,7 @@ std::size_t SofaGLFWBaseGUI::runLoop(std::size_t targetNbIterations)
         // the engine must be terminated before the window
         if (s_numberOfActiveWindows == closedWindows.size())
         {
+            // could be not necessary if m_guiEngine already terminated but we may need it if GLFW closed itself. (typically escape key)
             m_guiEngine->terminate();
             m_guiEngine.reset();
         }
@@ -561,10 +546,10 @@ std::size_t SofaGLFWBaseGUI::runLoop(std::size_t targetNbIterations)
 
 void SofaGLFWBaseGUI::initVisual()
 {
-    node::initTextures(m_groot.get());
+    node::initTextures(this->groot.get());
 
     VisualStyle::SPtr visualStyle = nullptr;
-    m_groot->get(visualStyle);
+    this->groot->get(visualStyle);
     if (!visualStyle)
     {
         visualStyle = sofa::core::objectmodel::New<VisualStyle>();
@@ -574,7 +559,7 @@ void SofaGLFWBaseGUI::initVisual()
         displayFlags->setShowVisualModels(tristate::true_value);
         visualStyle->d_displayFlags.endEdit();
 
-        m_groot->addObject(visualStyle);
+        this->groot->addObject(visualStyle);
         visualStyle->init();
     }
 
@@ -610,7 +595,7 @@ void SofaGLFWBaseGUI::initVisual()
     m_vparams = VisualParams::defaultInstance();
     for (auto& [glfwWindow, sofaGlfwWindow] : s_mapWindows)
     {
-        sofaGlfwWindow->centerCamera(m_groot, m_vparams);
+        sofaGlfwWindow->centerCamera(this->groot, m_vparams);
     }
     
     setWindowBackgroundImage("textures/SOFA_logo.bmp", 0);
@@ -622,8 +607,8 @@ void SofaGLFWBaseGUI::runStep()
     {
         helper::AdvancedTimer::begin("Animate");
 
-        node::animate(m_groot.get(), m_groot->getDt());
-        node::updateVisual(m_groot.get());
+        node::animate(this->groot.get(), this->groot->getDt());
+        node::updateVisual(this->groot.get());
 
         helper::AdvancedTimer::end("Animate");
     }
@@ -688,8 +673,6 @@ void SofaGLFWBaseGUI::key_callback(GLFWwindow* window, int key, int scancode, in
     {
         if (action == GLFW_PRESS)
         {
-            dmsg_info_when(key == GLFW_KEY_LEFT_CONTROL, "SofaGLFWBaseGUI") << "KeyPressEvent, CONTROL pressed";
-
             KeypressedEvent keyPressedEvent(keyName);
             rootNode->propagateEvent(core::ExecParams::defaultInstance(), &keyPressedEvent);
         }
@@ -731,6 +714,12 @@ void SofaGLFWBaseGUI::key_callback(GLFWwindow* window, int key, int scancode, in
                 currentGUI->switchFullScreen(window);
             }
             break;
+        case GLFW_KEY_F11:
+            if (action == GLFW_PRESS)
+            {
+                currentGUI->switchFullScreen(window);
+            }
+            break;
         case GLFW_KEY_ESCAPE:
             if (action == GLFW_PRESS)
             {
@@ -761,8 +750,8 @@ void SofaGLFWBaseGUI::key_callback(GLFWwindow* window, int key, int scancode, in
             if (action == GLFW_PRESS && isCtrlKeyPressed)
             {
                 // Reload using CTRL + R
-                sofa::simulation::NodeSPtr groot = currentGUI->m_groot;
-                std::string filename = currentGUI->m_filename;
+                sofa::simulation::NodeSPtr groot = currentGUI->groot;
+                std::string filename = currentGUI->getSceneFileName();
 
                 if (!filename.empty() && helper::system::FileSystem::exists(filename))
                 {
@@ -774,22 +763,22 @@ void SofaGLFWBaseGUI::key_callback(GLFWwindow* window, int key, int scancode, in
                         groot = sofa::simulation::getSimulation()->createNewGraph("");
 
                     currentGUI->setSimulation(groot, filename);
+                    currentGUI->load();
                     currentGUI->setWindowTitle(nullptr, std::string("SOFA - " + filename).c_str());
 
                     sofa::simulation::node::initRoot(groot.get());
-                    auto camera = currentGUI->findCamera(groot);
-                    if (camera)
+                    if (currentGUI->currentCamera)
                     {
-                        camera->fitBoundingBox(groot->f_bbox.getValue().minBBox(), groot->f_bbox.getValue().maxBBox());
-                        currentGUI->changeCamera(camera);
+                        currentGUI->currentCamera->fitBoundingBox(groot->f_bbox.getValue().minBBox(), groot->f_bbox.getValue().maxBBox());
+                        currentGUI->changeCamera(currentGUI->currentCamera);
                     }
 
-                    currentGUI->initVisual();
+                    node::initTextures(groot.get());
 
                     currentGUI->m_guiEngine->resetCounter();
 
                     // update camera if a sidecar file is present
-                    currentGUI->restoreCamera(currentGUI->findCamera(groot));
+                    currentGUI->restoreCamera(currentGUI->currentCamera);
                 }
             }
 
