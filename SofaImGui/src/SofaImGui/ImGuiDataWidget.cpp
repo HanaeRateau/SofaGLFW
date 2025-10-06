@@ -30,6 +30,7 @@
 #include <sofa/helper/SelectableItem.h>
 #include <SofaImGui/widgets/LinearSpringWidget.h>
 #include <SofaImGui/widgets/MaterialWidget.h>
+#include <SofaImGui/widgets/RigidMass.h>
 
 namespace sofaimgui
 {
@@ -626,8 +627,6 @@ void DataWidget<type::RGBAColor>::showWidget(MyData& data)
 }
 
 /***********************************************************************************************************************
-<<<<<<< HEAD
-=======
  * CompressedRowSparseMatrixConstraint
  **********************************************************************************************************************/
 
@@ -693,9 +692,6 @@ void DataWidget<sofa::type::vector<sofa::component::solidmechanics::spring::Line
 }
 
 /***********************************************************************************************************************
-<<<<<<< HEAD
->>>>>>> e300f72 (Spring widget (#190))
-=======
  * Material
  **********************************************************************************************************************/
 
@@ -712,7 +708,36 @@ void DataWidget<sofa::type::vector<sofa::type::Material>>::showWidget(MyData& da
 }
 
 /***********************************************************************************************************************
->>>>>>> 4306024 (Introduce material widget (#202))
+ * RigidMass
+ **********************************************************************************************************************/
+
+template<>
+void DataWidget<sofa::defaulttype::Rigid3Mass>::showWidget(MyData& data)
+{
+    const auto& rigidMass = data.getValue();
+    showRigidMass(rigidMass);
+}
+
+template<>
+void DataWidget<sofa::defaulttype::Rigid2Mass>::showWidget(MyData& data)
+{
+    const auto& rigidMass = data.getValue();
+    showRigidMass(rigidMass);
+}
+
+template<>
+void DataWidget<sofa::type::vector<sofa::defaulttype::Rigid3Mass>>::showWidget(MyData& data)
+{
+    showRigidMasses(data);
+}
+
+template<>
+void DataWidget<sofa::type::vector<sofa::defaulttype::Rigid2Mass>>::showWidget(MyData& data)
+{
+    showRigidMasses(data);
+}
+
+/***********************************************************************************************************************
  * Factory
  **********************************************************************************************************************/
 
@@ -796,4 +821,9 @@ const bool dw_springvecf = DataWidgetFactory::Add<sofa::type::vector<sofa::compo
 
 const bool dw_material = DataWidgetFactory::Add<sofa::type::Material>();
 const bool dw_vector_material = DataWidgetFactory::Add<sofa::type::vector<sofa::type::Material>>();
+
+const bool dw_rigid2mass = DataWidgetFactory::Add<sofa::defaulttype::Rigid2Mass>();
+const bool dw_vector_rigid2mass = DataWidgetFactory::Add<sofa::type::vector<sofa::defaulttype::Rigid2Mass>>();
+const bool dw_rigid3mass = DataWidgetFactory::Add<sofa::defaulttype::Rigid3Mass>();
+const bool dw_vector_rigid3mass = DataWidgetFactory::Add<sofa::type::vector<sofa::defaulttype::Rigid3Mass>>();
 }
