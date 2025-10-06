@@ -11,7 +11,7 @@ sofa_find_package(Sofa.GUI.Common QUIET)
 
 include(FetchContent)
 
-find_package(glfw3 CONFIG QUIET)
+sofa_find_package(glfw3 CONFIG QUIET)
 
 if(TARGET glfw)
     if(CMAKE_SYSTEM_NAME STREQUAL Windows)
