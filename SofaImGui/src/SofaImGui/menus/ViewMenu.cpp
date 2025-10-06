@@ -391,8 +391,7 @@ void ViewMenu::addAlignCamera()
 
 void ViewMenu::addFullScreen()
 {
-    bool isFullScreen = m_baseGUI->isFullScreen();
-    if (ImGui::LocalCheckBox("Fullscreen", &isFullScreen))
+    if (ImGui::MenuItem("Full Screen", "F11"))
     {
         m_baseGUI->switchFullScreen();
     }
