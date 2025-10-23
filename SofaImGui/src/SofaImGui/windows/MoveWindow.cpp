@@ -29,6 +29,8 @@
 #include <SofaImGui/widgets/Buttons.h>
 #include <SofaImGui/FooterStatusBar.h>
 
+#include <SofaImGui/widgets/Pad3D.h>
+
 namespace sofaimgui::windows {
 
 MoveWindow::MoveWindow(const std::string& name,
@@ -124,6 +126,12 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
                     ImGui::Spacing();
                     showSliderDouble("Z", "##ZSlider", "##ZInput", &z, m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2], ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
 
+                    showPad(x, y, z,
+                        m_TCPMinPosition + initPosition[0], m_TCPMaxPosition + initPosition[0],
+                        m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2],
+                        m_TCPMinPosition + initPosition[1], m_TCPMaxPosition + initPosition[1]
+                    );
+
                     ImGui::LocalEndCollapsingHeader();
                 }
 
@@ -136,9 +144,9 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
                     ImGui::SetCursorPosX(ImGui::GetWindowWidth() - ImGui::GetFrameHeight() - ImGui::GetStyle().FramePadding.x); // Set position to right of the line
 
                     bool openOptions = false;
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImGuiCol_Header);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGuiCol_Header);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGuiCol_Header);
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_Header));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_Header));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_Header));
                     if (ImGui::Button(ICON_FA_BARS, ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())))
                         openOptions = true;
                     ImGui::PopStyleColor(3);
@@ -350,6 +358,12 @@ void MoveWindow::showWeightOption(const int &i)
     ImGui::LocalInputDouble("##Input ", &w, 0, 0);
     ImGui::PopID();
     weight[i] = w;
+}
+
+void MoveWindow::showPad(double& x, double& y, double& z, const double& minX, const double& maxX, const double& minY, const double& maxY, const double& minZ, const double& maxZ)
+{
+    // XY Pad
+    ImGui::Pad3D("XZ Plan", "X ", "Z ", "Y axis", &x, &z, &y, &minX, &maxX, &minY, &maxY, &minZ, &maxZ);
 }
 
 }

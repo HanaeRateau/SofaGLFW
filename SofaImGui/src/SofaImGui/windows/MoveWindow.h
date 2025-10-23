@@ -81,6 +81,7 @@ class SOFAIMGUI_API MoveWindow : public BaseWindow
     bool showSliderDouble(const char *name, const char* label1, const char *label2, double* v, const double& min, const double& max);
     void showOptions();
     void showWeightOption(const int &index);
+    void showPad(double& x, double& y, double& z, const double& minX, const double& maxX, const double& minY, const double& maxY, const double& minZ, const double& maxZ);
 };
 
 }
