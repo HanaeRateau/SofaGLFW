@@ -23,6 +23,7 @@
 
 #include <SofaImGui/windows/BaseWindow.h>
 #include <SofaImGui/models/IPController.h>
+#include <SofaImGui/widgets/Pad3D.h>
 #include <imgui.h>
 
 namespace sofaimgui::windows {
@@ -76,6 +77,8 @@ class SOFAIMGUI_API MoveWindow : public BaseWindow
     bool m_freeYaw{true};
 
     std::vector<Accessory> m_accessories;
+
+    ImGui::Pad3D movePad;
 
     bool showSliderDouble(const char *name, const char* label1, const char *label2, double* v, const double& min, const double& max, const ImVec4 &color);
     bool showSliderDouble(const char *name, const char* label1, const char *label2, double* v, const double& min, const double& max);

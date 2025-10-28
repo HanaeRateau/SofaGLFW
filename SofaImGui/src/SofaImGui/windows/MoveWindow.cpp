@@ -363,7 +363,7 @@ void MoveWindow::showWeightOption(const int &i)
 void MoveWindow::showPad(double& x, double& y, double& z, const double& minX, const double& maxX, const double& minY, const double& maxY, const double& minZ, const double& maxZ)
 {
     // XY Pad
-    ImGui::Pad3D("XZ Plan", "X ", "Z ", "Y axis", &x, &z, &y, &minX, &maxX, &minY, &maxY, &minZ, &maxZ);
+    movePad.showPad3D("XZ Plan", "X ", "Z ", "Y axis", &x, &z, &y, &minX, &maxX, &minY, &maxY, &minZ, &maxZ);
 }
 
 }
