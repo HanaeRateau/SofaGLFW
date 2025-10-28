@@ -141,7 +141,7 @@ namespace ImGui
 		{
 			if (m_mousePosPad.x > 0)
 			{
-				ImGui::TeleportMousePos(m_grabBBX.GetCenter());
+				ImGui::TeleportMousePos(ImVec2(m_grabBBX.GetCenter().x, m_granBBY.GetCenter().y));
 				m_mousePosPad = ImVec2(-1, -1);
 			}
 

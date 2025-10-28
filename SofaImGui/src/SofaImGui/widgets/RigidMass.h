@@ -22,36 +22,52 @@
 #pragma once
 #include <sofa/core/objectmodel/Data.h>
 #include <imgui.h>
-#include <SofaImGui/widgets/Buttons.h>
 
 namespace sofaimgui
 {
 
-inline bool showScalarWidget(const std::string& label, const std::string& id, float& value)
+template<sofa::Size N, typename real>
+inline void showRigidMass(const sofa::defaulttype::RigidMass<N,real>& rigidMass)
 {
-    ImGui::PushItemWidth(-1); // Fit container width
-    bool result = ImGui::LocalInputFloat((label + "##" + id).c_str(), &value, 0.0f, 0.0f, "%.8f", ImGuiInputTextFlags_None);
-    ImGui::PopItemWidth();
-    return result;
+    ImGui::Text("Mass: %f", rigidMass.mass);
+    ImGui::Text("Volume: %f", rigidMass.volume);
+
+    std::stringstream ss;
+    ss << rigidMass.inertiaMatrix;
+    ImGui::Text("Inertia Matrix: %s", ss.str().c_str());
 }
 
-inline bool showScalarWidget(const std::string& label, const std::string& id, double& value)
+template<sofa::Size N, typename real>
+inline void showRigidMasses(const sofa::Data<sofa::type::vector<sofa::defaulttype::RigidMass<N, real>>>& data)
 {
-    ImGui::PushItemWidth(-1); // Fit container width
-    bool result = ImGui::LocalInputDouble((label + "##" + id).c_str(), &value, 0.0f, 0.0f, "%.8f", ImGuiInputTextFlags_None);
-    ImGui::PopItemWidth();
-    return result;
-}
-
-template<typename Scalar>
-void showScalarWidget(sofa::Data<Scalar>& data)
-{
-    Scalar initialValue = data.getValue();
-    const auto& label = data.getName();
-    const auto id = data.getName() + data.getOwner()->getPathName();
-    if (showScalarWidget(label, id, initialValue))
+    static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_NoHostExtendX;
+    ImGui::Text("%d elements", data.getValue().size());
+    if (ImGui::BeginTable((data.getName() + data.getOwner()->getPathName()).c_str(), 4, flags))
     {
-        data.setValue(initialValue);
+        ImGui::TableSetupColumn("");
+        ImGui::TableSetupColumn("Mass");
+        ImGui::TableSetupColumn("Volume");
+        ImGui::TableSetupColumn("Inertia Matrix");
+
+        ImGui::TableHeadersRow();
+
+        unsigned int counter {};
+        for (const auto& rigidMass : *sofa::helper::getReadAccessor(data))
+        {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("%d", counter++);
+            ImGui::TableNextColumn();
+            ImGui::Text("%f", rigidMass.mass);
+            ImGui::TableNextColumn();
+            ImGui::Text("%f", rigidMass.volume);
+
+            ImGui::TableNextColumn();
+            std::stringstream ss;
+            ss << rigidMass.inertiaMatrix;
+            ImGui::Text("Inertia Matrix: %s", ss.str().c_str());
+        }
+        ImGui::EndTable();
     }
 }
 

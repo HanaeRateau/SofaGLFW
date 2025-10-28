@@ -28,11 +28,23 @@ namespace sofaimgui::windows {
 
 class SOFAIMGUI_API SceneGraphWindow : public BaseWindow
 {
-   public:
+public:
     SceneGraphWindow(const std::string& name, const bool& isWindowOpen);
     ~SceneGraphWindow() = default;
 
     void showWindow(sofa::simulation::Node*groot, const ImGuiWindowFlags &windowFlags);
+
+protected:
+    void showGraph(sofa::simulation::Node *groot, const ImGuiWindowFlags &windowFlags, std::set<sofa::core::objectmodel::BaseObject*>& componentToOpen, std::set<sofa::simulation::Node *> &nodeToOpen);
+    bool showComponentWindow(sofa::core::objectmodel::BaseObject* component, const ImGuiWindowFlags &windowsFlags);
+    bool showNodeWindow(sofa::simulation::Node* node, const ImGuiWindowFlags &windowsFlags);
+
+    void addGroupTab(const std::map<std::string, std::vector<sofa::core::BaseData*> >& groupMap);
+    void addLinksTab(const sofa::core::objectmodel::Base::VecLink& links);
+    void addMessagesTab(const std::deque<sofa::helper::logging::Message> &messages, const std::string& name, const std::string &icon);
+    void addInfosTab(sofa::simulation::Node* node);
+
+    void getComponentIconAlert(sofa::core::objectmodel::BaseObject* object, ImVec4& objectColor, std::string& icon);
 };
 
 }

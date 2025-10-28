@@ -23,6 +23,7 @@
 #include <sofa/component/visual/VisualStyle.h>
 #include <sofa/component/visual/VisualGrid.h>
 #include <sofa/core/visual/VisualParams.h>
+#include <sofa/component/visual/BaseCamera.h>
 
 #include <sofa/component/visual/LineAxis.h>
 #include <sofa/component/visual/VisualBoundingBox.h>
@@ -60,14 +61,22 @@ void ViewMenu::addMenu(const std::pair<unsigned int, unsigned int>& fboSize,
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
     if (ImGui::BeginMenu("View"))
     {
+        sofa::component::visual::BaseCamera::SPtr camera;
+        const auto& groot = m_baseGUI->getRootNode();
+        groot->get(camera);
+
         ImGui::PopStyleColor();
 
         addViewport();
 
         ImGui::Separator();
 
-        addAlignCamera();
-        addCenterCamera();
+        addCenterCamera(camera);
+        addAlignCamera(camera);
+        addOrthographic(camera);
+
+        ImGui::Separator();
+
         addSaveCamera();
         addRestoreCamera();
 
@@ -341,16 +350,13 @@ void ViewMenu::addViewport()
     }
 }
 
-void ViewMenu::addAlignCamera()
+void ViewMenu::addAlignCamera(sofa::component::visual::BaseCamera::SPtr camera)
 {
-    if (ImGui::BeginMenu("Align Camera"))
+    if (ImGui::BeginMenu("Align"))
     {
-        sofa::component::visual::BaseCamera::SPtr camera;
-        const auto& groot = m_baseGUI->getRootNode();
-        groot->get(camera);
-
         if (camera)
         {
+            const auto& groot = m_baseGUI->getRootNode();
             if (ImGui::MenuItem("Top", "1"))
             {
                 SofaGLFWWindow::alignCamera(groot, SofaGLFWWindow::CameraAlignement::TOP);
@@ -389,32 +395,50 @@ void ViewMenu::addAlignCamera()
     }
 }
 
+void ViewMenu::addOrthographic(sofa::component::visual::BaseCamera::SPtr camera)
+{
+    bool ortho = (camera->getCameraType() == sofa::core::visual::VisualParams::ORTHOGRAPHIC_TYPE);
+    if (ImGui::MenuItem((ortho)?"Perspective":"Orthographic"))
+    {
+        camera->setCameraType((!ortho)? sofa::core::visual::VisualParams::ORTHOGRAPHIC_TYPE: sofa::core::visual::VisualParams::PERSPECTIVE_TYPE);
+    }
+}
+
 void ViewMenu::addFullScreen()
 {
-    bool isFullScreen = m_baseGUI->isFullScreen();
-    if (ImGui::LocalCheckBox("Fullscreen", &isFullScreen))
+    if (ImGui::MenuItem("Full Screen", "F11"))
     {
         m_baseGUI->switchFullScreen();
     }
 }
 
-void ViewMenu::addCenterCamera()
+void ViewMenu::addCenterCamera(sofa::component::visual::BaseCamera::SPtr camera)
 {
-    if (ImGui::MenuItem("Center Camera"))
+    const auto& groot = m_baseGUI->getRootNode();
+    const auto& bbox = groot->f_bbox.getValue();
+
+    if(!bbox.isValid())
     {
-        sofa::component::visual::BaseCamera::SPtr camera;
-        const auto& groot = m_baseGUI->getRootNode();
-        groot->get(camera);
+        msg_error_when(!bbox.isValid(), "GUI") << "Global bounding box is invalid: " << bbox;
+        return;
+    }
+
+    if (ImGui::MenuItem("Fit All", "0"))
+    {
         if (camera)
         {
-            if( groot->f_bbox.getValue().isValid())
-            {
-                camera->fitBoundingBox(groot->f_bbox.getValue().minBBox(), groot->f_bbox.getValue().maxBBox());
-            }
-            else
-            {
-                msg_error_when(!groot->f_bbox.getValue().isValid(), "GUI") << "Global bounding box is invalid: " << groot->f_bbox.getValue();
-            }
+            camera->fitBoundingBox(bbox.minBBox(), bbox.maxBBox());
+            auto bbCenter = (bbox.maxBBox() + bbox.minBBox()) * 0.5f;
+            camera->d_lookAt.setValue(bbCenter);
+        }
+    }
+
+    if (ImGui::MenuItem("Center"))
+    {
+        if (camera)
+        {
+            auto bbCenter = (bbox.maxBBox() + bbox.minBBox()) * 0.5f;
+            camera->d_lookAt.setValue(bbCenter);
         }
     }
 }
@@ -422,7 +446,7 @@ void ViewMenu::addCenterCamera()
 void ViewMenu::addSaveCamera()
 {
     const std::string viewFileName = m_baseGUI->getFilename() + ".view";
-    if (ImGui::MenuItem("Save Camera"))
+    if (ImGui::MenuItem("Save View"))
     {
         sofa::component::visual::BaseCamera::SPtr camera;
         const auto& groot = m_baseGUI->getRootNode();
@@ -446,7 +470,7 @@ void ViewMenu::addRestoreCamera()
     const std::string viewFileName = m_baseGUI->getFilename() + ".view";
     bool fileExists = sofa::helper::system::FileSystem::exists(viewFileName);
     ImGui::BeginDisabled(!fileExists);
-    if (ImGui::MenuItem("Restore Camera"))
+    if (ImGui::MenuItem("Restore View"))
     {
         SofaGLFWWindow::resetSimulationView(m_baseGUI);
     }
