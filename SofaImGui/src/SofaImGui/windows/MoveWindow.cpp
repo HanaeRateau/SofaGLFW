@@ -40,6 +40,12 @@ MoveWindow::MoveWindow(const std::string& name,
     m_name = name;
     m_isOpen = isWindowOpen;
     m_isDrivingSimulation = true;
+
+    movePad = ImGui::Pad3D("XZ Plan", "X", "Y", "Z",
+        &x, &y, &z,
+        &m_TCPMinPosition, &m_TCPMaxPosition,
+        &m_TCPMinPosition, &m_TCPMaxPosition,
+        &m_TCPMinPosition, &m_TCPMaxPosition);
 }
 
 void MoveWindow::clearWindow()
@@ -107,13 +113,6 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
             {
                 ImGui::Spacing();
 
-                static double x=0;
-                static double y=0;
-                static double z=0;
-                static double rx=0.;
-                static double ry=0.;
-                static double rz=0.;
-
                 if(m_isDrivingSimulation)
                     m_IPController->getTCPTargetPosition(x, y, z, rx, ry, rz);
                 
@@ -126,11 +125,7 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
                     ImGui::Spacing();
                     showSliderDouble("Z", "##ZSlider", "##ZInput", &z, m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2], ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
 
-                    showPad(x, y, z,
-                        m_TCPMinPosition + initPosition[0], m_TCPMaxPosition + initPosition[0],
-                        m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2],
-                        m_TCPMinPosition + initPosition[1], m_TCPMaxPosition + initPosition[1]
-                    );
+                    showPad();
 
                     ImGui::LocalEndCollapsingHeader();
                 }
@@ -360,10 +355,10 @@ void MoveWindow::showWeightOption(const int &i)
     weight[i] = w;
 }
 
-void MoveWindow::showPad(double& x, double& y, double& z, const double& minX, const double& maxX, const double& minY, const double& maxY, const double& minZ, const double& maxZ)
+void MoveWindow::showPad()
 {
     // XY Pad
-    movePad.showPad3D("XZ Plan", "X ", "Z ", "Y axis", &x, &z, &y, &minX, &maxX, &minY, &maxY, &minZ, &maxZ);
+    movePad.showPad3D();
 }
 
 }

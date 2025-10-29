@@ -68,6 +68,13 @@ class SOFAIMGUI_API MoveWindow : public BaseWindow
     double m_TCPMaxPosition{500.};
     double m_TCPMinOrientation{-M_PI};
     double m_TCPMaxOrientation{M_PI};
+
+    double x;
+    double y;
+    double z;
+    double rx;
+    double ry;
+    double rz;
     
     std::vector<models::IPController::Actuator> m_actuators;
     std::string m_actuatorsDescription{"Motors Position (rad)"};
@@ -84,7 +91,7 @@ class SOFAIMGUI_API MoveWindow : public BaseWindow
     bool showSliderDouble(const char *name, const char* label1, const char *label2, double* v, const double& min, const double& max);
     void showOptions();
     void showWeightOption(const int &index);
-    void showPad(double& x, double& y, double& z, const double& minX, const double& maxX, const double& minY, const double& maxY, const double& minZ, const double& maxZ);
+    void showPad();
 };
 
 }
