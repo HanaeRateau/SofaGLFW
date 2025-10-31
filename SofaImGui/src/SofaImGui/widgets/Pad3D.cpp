@@ -75,8 +75,9 @@ namespace ImGui
 		double fCursorOff = 16.0f;
 		const double w = std::min(window->WorkRect.GetWidth(), ImGui::GetWindowSize().y);
 
-		NewLine();
-
+		PushStyleColor(ImGuiCol_Text, GetColorU32(ImGuiCol_TextDisabled));
+		Text("Press Ctrl to move the third dimension");
+		PopStyleColor();
 		const ImRect total_bb(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x, window->DC.CursorPos.y + w - GetFrameHeight() * 8));
 		
 		const ImVec2 containerSize = ImVec2(total_bb.GetWidth() * downScale, total_bb.GetHeight() - GetFrameHeight()*2.5);
