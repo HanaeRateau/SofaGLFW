@@ -41,8 +41,8 @@ MoveWindow::MoveWindow(const std::string& name,
     m_isOpen = isWindowOpen;
     m_isDrivingSimulation = true;
 
-    movePad = ImGui::Pad3D("XZ Plan", "X", "Y", "Z",
-        &x, &y, &z,
+    m_movePad = ImGui::Pad3D("XY Plan", "X", "Y", "Z",
+        &m_x, &m_y, &m_z,
         &m_TCPMinPosition, &m_TCPMaxPosition,
         &m_TCPMinPosition, &m_TCPMaxPosition,
         &m_TCPMinPosition, &m_TCPMaxPosition);
@@ -114,20 +114,24 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
                 ImGui::Spacing();
 
                 if(m_isDrivingSimulation)
-                    m_IPController->getTCPTargetPosition(x, y, z, rx, ry, rz);
+                    m_IPController->getTCPTargetPosition(m_x, m_y, m_z, m_rx, m_ry, m_rz);
                 
                 if (ImGui::LocalBeginCollapsingHeader(m_TCPPositionDescription.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                 {
                     const auto &initPosition = m_IPController->getTCPTargetInitPosition();
-                    showSliderDouble("X", "##XSlider", "##XInput", &x, m_TCPMinPosition + initPosition[0], m_TCPMaxPosition + initPosition[0], ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-                    ImGui::Spacing();
-                    showSliderDouble("Y", "##YSlider", "##YInput", &y, m_TCPMinPosition + initPosition[1], m_TCPMaxPosition + initPosition[1], ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
-                    ImGui::Spacing();
-                    showSliderDouble("Z", "##ZSlider", "##ZInput", &z, m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2], ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
-
+                    m_movePad.setBounds("X", m_TCPMinPosition + initPosition[0], m_TCPMaxPosition + initPosition[0]);
+                    m_movePad.setBounds("Y", m_TCPMinPosition + initPosition[1], m_TCPMaxPosition + initPosition[1]);
+                    m_movePad.setBounds("Z", m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2]);
                     showPad();
 
+                    showSliderDouble("X", "##XSlider", "##XInput", &m_x, m_TCPMinPosition + initPosition[0], m_TCPMaxPosition + initPosition[0], ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                    ImGui::Spacing();
+                    showSliderDouble("Y", "##YSlider", "##YInput", &m_y, m_TCPMinPosition + initPosition[1], m_TCPMaxPosition + initPosition[1], ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                    ImGui::Spacing();
+                    showSliderDouble("Z", "##ZSlider", "##ZInput", &m_z, m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2], ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
+                    
                     ImGui::LocalEndCollapsingHeader();
+
                 }
 
                 m_IPController->setFreeInRotation(m_freeRoll, m_freePitch, m_freeYaw);
@@ -159,7 +163,7 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
 
                     if (m_freeRoll)
                         ImGui::BeginDisabled();
-                    showSliderDouble("R", "##RSlider", "##RInput", &rx, m_TCPMinOrientation, m_TCPMaxOrientation, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                    showSliderDouble("R", "##RSlider", "##RInput", &m_rx, m_TCPMinOrientation, m_TCPMaxOrientation, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
                     if (m_freeRoll)
                         ImGui::EndDisabled();
 
@@ -167,7 +171,7 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
 
                     if (m_freePitch)
                         ImGui::BeginDisabled();
-                    showSliderDouble("P", "##PSlider", "##PInput", &ry, m_TCPMinOrientation, m_TCPMaxOrientation, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                    showSliderDouble("P", "##PSlider", "##PInput", &m_ry, m_TCPMinOrientation, m_TCPMaxOrientation, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
                     if (m_freePitch)
                         ImGui::EndDisabled();
 
@@ -175,7 +179,7 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
 
                     if (m_freeYaw)
                         ImGui::BeginDisabled();
-                    showSliderDouble("Y", "##YawSlider", "##YawInput", &rz, m_TCPMinOrientation, m_TCPMaxOrientation, ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
+                    showSliderDouble("Y", "##YawSlider", "##YawInput", &m_rz, m_TCPMinOrientation, m_TCPMaxOrientation, ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
                     if (m_freeYaw)
                         ImGui::EndDisabled();
 
@@ -186,10 +190,10 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
                 {
                     sofa::type::Quat<SReal> q = m_IPController->getTCPPosition().getOrientation();
                     sofa::type::Vec3 rotation = q.toEulerVector();
-                    m_IPController->setTCPTargetPosition(x, y, z,
-                                                         m_freeRoll? rotation[0]: rx,
-                                                         m_freePitch? rotation[1]: ry,
-                                                         m_freeYaw? rotation[2]: rz);
+                    m_IPController->setTCPTargetPosition(m_x, m_y, m_z,
+                                                         m_freeRoll? rotation[0]: m_rx,
+                                                         m_freePitch? rotation[1]: m_ry,
+                                                         m_freeYaw? rotation[2]: m_rz);
                 }
             }
 
@@ -358,7 +362,7 @@ void MoveWindow::showWeightOption(const int &i)
 void MoveWindow::showPad()
 {
     // XY Pad
-    movePad.showPad3D();
+    m_movePad.showPad3D();
 }
 
 }

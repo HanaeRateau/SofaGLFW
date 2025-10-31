@@ -1,8 +1,11 @@
 #define IMGUI_DEFINE_MATH_OPERATORS // import math operators
 #include "Pad3D.h"
+#include "Buttons.h"
 
 #include <IconsFontAwesome6.h>
 #include <iostream>
+#include <string>
+#include <format>
 
 namespace ImGui
 {
@@ -17,27 +20,23 @@ namespace ImGui
 		const double* p_minY, const double* p_maxY,
 		const double* p_minZ, const double* p_maxZ)
 	{
-		if (m_mappedAxis.find(labelX) == m_mappedAxis.end() || m_mappedAxis.find(labelY) == m_mappedAxis.end() || m_mappedAxis.find(labelZ) == m_mappedAxis.end())
-		{
-			throw std::invalid_argument("Labels must be X, Y or Z");
-			return;
-		}
+
 		m_label = label;
-		m_mappedAxis["X"] = labelX;
-		m_mappedAxis["Y"] = labelY;
-		m_mappedAxis["Z"] = labelZ;
+		m_mappedAxis["PadH"] = labelX;
+		m_mappedAxis["PadV"] = labelY;
+		m_mappedAxis["Slider"] = labelZ;
 
-		m_minValues["X"] = p_minX;
-		m_minValues["Y"] = p_minY;
-		m_minValues["Z"] = p_minZ;
+		m_minValues["PadH"] = *p_minX;
+		m_minValues["PadV"] = *p_minY;
+		m_minValues["Slider"] = *p_minZ;
 
-		m_maxValues["X"] = p_maxX;
-		m_maxValues["Y"] = p_maxY;
-		m_maxValues["Z"] = p_maxZ;
+		m_maxValues["PadH"] = *p_maxX;
+		m_maxValues["PadV"] = *p_maxY;
+		m_maxValues["Slider"] = *p_maxZ;
 
-		m_values["X"] = p_valueX;
-		m_values["Y"] = p_valueY;
-		m_values["Z"] = p_valueZ;
+		m_values["PadH"] = p_valueX;
+		m_values["PadV"] = p_valueY;
+		m_values["Slider"] = p_valueZ;
 	}
 
 
@@ -50,10 +49,6 @@ namespace ImGui
 		if (window->SkipItems)
 			return false;
 
-		IM_ASSERT((ImU64*)p_minX < (ImU64*)p_maxX);
-		IM_ASSERT((ImU64*)p_minY < (ImU64*)p_maxY);
-
-
 		ImGuiContext& g = *GImGui;
 		const ImGuiStyle& style = g.Style;
 		const ImGuiID idXY = window->GetID(m_label);
@@ -62,7 +57,7 @@ namespace ImGui
 		ImGuiID idZ = window->GetID(idY);
 
 		// TODO: Move those to style
-		double downScale = 0.75f;
+		double downScale = 0.8f;
 		double dragX_placement = 0.1f;
 		double dragY_placement = 0.1f;
 		double dragX_thickness = 8.0f;
@@ -78,34 +73,66 @@ namespace ImGui
 		ImU32 uBlue = ImGui::GetColorU32(ImGuiCol_FrameBgActive);
 		ImU32 uOrange = ImGui::GetColorU32(ImGuiCol_Button);
 		double fCursorOff = 16.0f;
-		const double w = std::min(ImGui::GetWindowSize().x * downScale, 500.0);
+		const double w = std::min(window->WorkRect.GetWidth(), ImGui::GetWindowSize().y);
 
-		const ImRect total_bb(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x, window->DC.CursorPos.y + w));
-		const ImRect frame_bb(total_bb.Min + ImVec2((total_bb.GetWidth() - w) / 2.0f, 0.0f), window->DC.CursorPos + ImVec2((total_bb.GetWidth() - w) / 2.0f, 0.0f) + ImVec2(w, w));
-		const ImRect frame_bb_drag(frame_bb.Min, frame_bb.Min + ImVec2(w * downScale, w * downScale));
-		const ImRect frame_bb_dragX(ImVec2(frame_bb_drag.Min.x, ImLerp(frame_bb_drag.Max.y, frame_bb.Max.y, dragX_placement)),
-			ImVec2(frame_bb_drag.Max.x, ImLerp(frame_bb_drag.Max.y, frame_bb.Max.y, dragX_placement) + dragX_thickness));
+		NewLine();
+
+		const ImRect total_bb(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x, window->DC.CursorPos.y + w - GetFrameHeight() * 8));
+		
+		const ImVec2 containerSize = ImVec2(total_bb.GetWidth() * downScale, total_bb.GetHeight() - GetFrameHeight()*2.5);
+		const ImRect frame_bb(total_bb.Min + ImVec2((total_bb.GetWidth() - containerSize.x) / 2.0f, GetFrameHeight()),
+			total_bb.Min + ImVec2((total_bb.GetWidth() - containerSize.x) / 2.0f, GetFrameHeight()) + containerSize);
+
+		int padSize = frame_bb.GetWidth() - GetFrameHeight() * 8;
+		padSize = std::min(frame_bb.GetHeight(), std::max((float)padSize, frame_bb.GetWidth()));
+		auto padwidth = padSize + GetFrameHeight() * 8;
+		const ImRect frame_bb_drag(frame_bb.Min + ImVec2( (frame_bb.GetWidth() - padwidth)/2.0f, 0.0f), frame_bb.Min + ImVec2((frame_bb.GetWidth() - padwidth) / 2.0f, 0.0f) + ImVec2(padSize, padSize));
+
+		const ImRect frame_bb_dragX(ImVec2(frame_bb_drag.Min.x, frame_bb_drag.Max.y+style.FramePadding.y),
+			ImVec2(frame_bb_drag.Max.x, frame_bb_drag.Max.y + style.FramePadding.y + dragX_thickness));
 		const ImRect frame_bb_dragY(ImVec2(ImLerp(frame_bb_drag.Max.x, frame_bb.Max.x, dragY_placement), frame_bb_drag.Min.y),
 			ImVec2(ImLerp(frame_bb_drag.Max.x, frame_bb.Max.x, dragY_placement) + dragY_thickness, frame_bb_drag.Max.y));
-		const ImRect frame_bb_dragZ(ImVec2(frame_bb.Max.x - dragY_thickness, frame_bb_drag.Min.y),
-			ImVec2(frame_bb.Max.x, frame_bb_drag.Max.y));
+		const ImRect frame_bb_dragZ(ImVec2(frame_bb_dragY.Max.x + GetFrameHeight() * 4, frame_bb_drag.Min.y),
+			ImVec2(frame_bb_dragY.Max.x + GetFrameHeight() * 4 + dragY_thickness, frame_bb_drag.Max.y));
 
 		double fXLimit = fCursorOff / frame_bb_drag.GetWidth();
 		double fYLimit = fCursorOff / frame_bb_drag.GetHeight();
 
-		const ImVec2 curPos = window->DC.CursorPos;
 
 		ImGui::ItemSize(total_bb, style.FramePadding.y);
 		if (!ImGui::ItemAdd(total_bb, idXY, &frame_bb, 0))
-			return false;
-
+			return false;		
 
 		// Show sliders
-		show1DPadSlider(m_mappedAxis["X"], m_values["X"], m_minValues["X"], m_maxValues["X"], frame_bb_dragX, total_bb, m_grabBBX, idX, window);
-		show1DPadSlider(m_mappedAxis["Y"], m_values["Y"], m_minValues["Y"], m_maxValues["Y"], frame_bb_dragY, total_bb, m_grabBBY, idY, window, ImGuiSliderFlags_Vertical);
-		ImGui::SameLine();
-		show1DPadSlider(m_mappedAxis["Z"], m_values["Z"], m_minValues["Z"], m_maxValues["Z"], frame_bb_dragZ, total_bb, m_grabBBZ, idZ, window, ImGuiSliderFlags_Vertical);
-		
+		// PadH
+		window->DC.CursorPos = (ImVec2(frame_bb_dragX.Min.x - GetFrameHeight() - style.FramePadding.x , frame_bb_dragX.GetCenter().y - GetFrameHeight()/2));
+		if (Button(ICON_FA_ARROWS_LEFT_RIGHT"##PadH", ImVec2(GetFrameHeight(), GetFrameHeight())))
+		{
+			m_flippedAxis["PadH"] = !m_flippedAxis["PadH"];
+		}
+		show1DPadSlider(m_mappedAxis["PadH"], m_values["PadH"],
+			(m_flippedAxis["PadH"])?&m_maxValues["PadH"]:& m_minValues["PadH"], 
+			(m_flippedAxis["PadH"])?&m_minValues["PadH"]:& m_maxValues["PadH"], frame_bb_dragX, total_bb, m_grabBBX, idX, window);
+
+		// PadV
+		window->DC.CursorPos = (ImVec2(frame_bb_dragY.GetCenter().x - GetFrameHeight()/2, frame_bb_dragY.Min.y - GetFrameHeight() - style.FramePadding.y));
+		if (Button(ICON_FA_ARROWS_UP_DOWN"##PadV", ImVec2(GetFrameHeight(), GetFrameHeight())))
+		{
+			m_flippedAxis["PadV"] = !m_flippedAxis["PadV"];
+		}
+		show1DPadSlider(m_mappedAxis["PadV"], m_values["PadV"], 
+			(m_flippedAxis["PadV"]) ? &m_maxValues["PadV"] : &m_minValues["PadV"],
+			(m_flippedAxis["PadV"]) ? &m_minValues["PadV"] : &m_maxValues["PadV"], frame_bb_dragY, total_bb, m_grabBBY, idY, window, ImGuiSliderFlags_Vertical);
+
+		// Slider
+		window->DC.CursorPos = (ImVec2(frame_bb_dragZ.GetCenter().x - GetFrameHeight()/2, frame_bb_dragZ.Min.y - GetFrameHeight() - style.FramePadding.y));
+		if (Button(ICON_FA_ARROWS_UP_DOWN"##Slider", ImVec2(GetFrameHeight(), GetFrameHeight())))
+		{
+			m_flippedAxis["Slider"] = !m_flippedAxis["Slider"];
+		}
+		show1DPadSlider(m_mappedAxis["Slider"], m_values["Slider"], 
+			(m_flippedAxis["Slider"]) ? &m_maxValues["Slider"] : &m_minValues["Slider"],
+			(m_flippedAxis["Slider"]) ? &m_minValues["Slider"] : &m_maxValues["Slider"], frame_bb_dragZ, total_bb, m_grabBBZ, idZ, window, ImGuiSliderFlags_Vertical);
 
 		// #region PAD
 		bool hovered = ImGui::ItemHoverable(frame_bb_drag, idXY, g.LastItemData.ItemFlags);
@@ -143,7 +170,9 @@ namespace ImGui
 		}
 		else if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
 		{
-			value_changedZ = ImGui::SliderBehavior(frame_bb_drag, idXY, ImGuiDataType_Double, m_values["Z"], m_minValues["Z"], m_maxValues["Z"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Vertical, &m_grabBBZ);
+			value_changedZ = ImGui::SliderBehavior(frame_bb_drag, idXY, ImGuiDataType_Double, m_values["Slider"], 
+				(m_flippedAxis["Slider"]) ? &m_maxValues["Slider"] : &m_minValues["Slider"],
+				(m_flippedAxis["Slider"]) ? &m_minValues["Slider"] : &m_maxValues["Slider"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Vertical, &m_grabBBZ);
 		}
 		else
 		{
@@ -153,9 +182,13 @@ namespace ImGui
 				m_mousePosPad = ImVec2(-1, -1);
 			}
 
-			value_changedX = ImGui::SliderBehavior(frame_bb_drag, idXY, ImGuiDataType_Double, m_values["X"], m_minValues["X"], m_maxValues["X"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat, &m_grabXY);
+			value_changedX = ImGui::SliderBehavior(frame_bb_drag, idXY, ImGuiDataType_Double, m_values["PadH"], 
+				(m_flippedAxis["PadH"]) ? &m_maxValues["PadH"] : &m_minValues["PadH"], 
+				(m_flippedAxis["PadH"]) ? &m_minValues["PadH"] : &m_maxValues["PadH"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat, &m_grabXY);
 			ImRect tempGrab(m_grabXY);
-			value_changedY = ImGui::SliderBehavior(frame_bb_drag, idXY, ImGuiDataType_Double, m_values["Y"], m_minValues["Y"], m_maxValues["Y"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Vertical, &m_grabXY);
+			value_changedY = ImGui::SliderBehavior(frame_bb_drag, idXY, ImGuiDataType_Double, m_values["PadV"], 
+				(m_flippedAxis["PadV"]) ? &m_maxValues["PadV"] : &m_minValues["PadV"], 
+				(m_flippedAxis["PadV"]) ? &m_minValues["PadV"] : &m_maxValues["PadV"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Vertical, &m_grabXY);
 			m_grabXY.Min.x = tempGrab.Min.x;
 			m_grabXY.Max.x = tempGrab.Max.x;
 			if (value_changedX || value_changedY)
@@ -164,11 +197,11 @@ namespace ImGui
 
 		ImDrawList* pDrawList = window->DrawList;
 
-		float s_delta_x = *m_maxValues["X"] - *m_minValues["X"];
-		float s_delta_y = *m_maxValues["Y"] - *m_minValues["Y"];
-		float fScaleX = (*m_values["X"] - *m_minValues["X"]) / s_delta_x;
-		float fScaleY = 1.0f - ((*m_values["Y"] - *m_minValues["Y"]) / s_delta_y);
-		ImVec2 vCursorPos((frame_bb_drag.Max.x - frame_bb_drag.Min.x) * fScaleX + frame_bb_drag.Min.x, (frame_bb_drag.Max.y - frame_bb_drag.Min.y) * fScaleY + frame_bb_drag.Min.y);
+		float s_delta_x = m_maxValues["PadH"] - m_minValues["PadH"];
+		float s_delta_y = m_maxValues["PadV"] - m_minValues["PadV"];
+		float fScaleX = (*m_values["PadH"] - m_minValues["PadH"]) / s_delta_x;
+		float fScaleY = 1.0f - ((*m_values["PadV"] - m_minValues["PadV"]) / s_delta_y);
+		ImVec2 vCursorPos(m_grabBBX.GetCenter().x, m_grabBBY.GetCenter().y);
 
 		char const* formatX = ImGui::DataTypeGetInfo(ImGuiDataType_Double)->PrintFmt;
 		char const* formatY = ImGui::DataTypeGetInfo(ImGuiDataType_Double)->PrintFmt;
@@ -215,11 +248,12 @@ namespace ImGui
 		if (fScaleX < 1.0f - fXLimit)
 			pDrawList->AddLine(ImVec2(frame_bb_drag.Max.x, frame_bb_drag.Max.y), ImVec2(vCursorPos.x + fCursorOff, frame_bb_drag.Max.y), uBlue, border_thickness);
 	
-
 		// #endregion PAD
 
 		window->DC.CursorPosPrevLine = total_bb.Max;
 		window->DC.CursorPos = total_bb.Max;
+
+		NewLine();
 
 		return value_changedX || value_changedY || value_changedZ;
 	}
@@ -262,11 +296,25 @@ namespace ImGui
 		window->DrawList->AddRectFilled(grabBB.Min, grabBB.Max, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), style.GrabRounding);
 
 		// Add Buttons
-		window->DC.CursorPos = ((flags & ImGuiSliderFlags_Vertical) == ImGuiSliderFlags_Vertical) ? ImVec2(grabBB.Max.x + style.FramePadding.x, grabBB.GetCenter().y) : ImVec2(grabBB.GetCenter().x, grabBB.Max.y);
+		window->DC.CursorPos = ((flags & ImGuiSliderFlags_Vertical) == ImGuiSliderFlags_Vertical) ? ImVec2(grabBB.Max.x + style.FramePadding.x, grabBB.GetCenter().y - GetFrameHeight() / 2.0f) : ImVec2(grabBB.GetCenter().x-GetFrameHeight()/2.0f, grabBB.Max.y);
 		bool showOtherAxis = false;
-		std::cout << " Resulting axis " << m_mappedAxis["X"] << ", " << m_mappedAxis["Y"] << ", " << m_mappedAxis["Z"] << std::endl;
-		if (ImGui::Button(label))
+
+		PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+		PushStyleColor(ImGuiCol_ButtonHovered, GetColorU32(ImGuiCol_HeaderHovered));
+		PushStyleColor(ImGuiCol_ButtonText, GetColorU32(ImGuiCol_Text));
+		ImGui::AlignTextToFramePadding();
+		const ImVec4& color = ImVec4(label=="X"?1.0f:0.0f, label == "Y" ? 1.0f : 0.0f, label == "Z" ? 1.0f : 0.0f, 1.0f);
+		ImVec2 size(1.0f, ImGui::GetFrameHeight());
+		ImGui::GetWindowDrawList()->AddRectFilled(window->DC.CursorPos,
+			window->DC.CursorPos+size,
+			ImGui::GetColorU32(color), ImGuiStyleVar_FrameRounding);
+		if (ImGui::Button((std::string(label) + ICON_FA_CARET_DOWN).c_str(), ImVec2(GetFrameHeight(), GetFrameHeight())))
+		{
 			showOtherAxis = true;
+		}
+		PopStyleColor(3);
+		SameLine();
+		Text(std::format("{:.3f}", *p_value).c_str());
 
 		auto idPopup = "##ChangeAxis" + std::string(label);
 		if (showOtherAxis)
@@ -280,7 +328,7 @@ namespace ImGui
 			{
 				if (m_axis[i] != label)
 					if (Selectable(m_axis[i]))
-						changeAxis(label, i);
+						swapAxis(label, i);
 			}
 			ImGui::EndPopup();
 		}
@@ -290,38 +338,38 @@ namespace ImGui
 	}
 
 
-	void Pad3D::changeAxis(const char* axisLabel, int axisIndex)
+	void Pad3D::swapAxis(const char* axisLabel, int axisIndexToSwap)
 	{
-		auto swappingAxis = m_axis[axisIndex];
-		auto index = getAxisIndex(axisLabel);
+		auto axis = getMappedAxis(axisLabel);
+		auto swappingAxis = getMappedAxis(m_axis[axisIndexToSwap]);
 
-		if (index < 3 && index >= 0)
+		//swap the values
+		auto tmpValue = m_minValues[swappingAxis];
+		m_minValues[swappingAxis] = m_minValues[axis];
+		m_minValues[axis] = tmpValue;
+
+		tmpValue = m_maxValues[swappingAxis];
+		m_maxValues[swappingAxis] = m_maxValues[axis];
+		m_maxValues[axis] = tmpValue;
+
+		auto tmp = m_values[swappingAxis];
+		m_values[swappingAxis] = m_values[axis];
+		m_values[axis] = tmp;
+
+
+		// swap the axisLabel and axisIndex axis
+		auto tmpAxis = m_mappedAxis[swappingAxis];
+		m_mappedAxis[swappingAxis] = m_mappedAxis[axis];
+		m_mappedAxis[axis] = tmpAxis;
+	}
+
+
+	const char* Pad3D::getMappedAxis(const char* axis)
+	{
+		for (auto [key, value] : m_mappedAxis)
 		{
-			auto axis = m_axis[index];
-			std::cout << " Swapping axis " << axis << " with " << swappingAxis << axisIndex << std::endl;
-			std::cout << " axis state " << m_mappedAxis["X"] << ", " << m_mappedAxis["Y"] << ", " << m_mappedAxis["Z"] << std::endl;
-
-			// swap the values
-			auto tmpValue = m_minValues[swappingAxis];
-			m_minValues[swappingAxis] = m_minValues[axisLabel];
-			m_minValues[axisLabel] = tmpValue;
-
-			tmpValue = m_maxValues[swappingAxis];
-			m_maxValues[swappingAxis] = m_maxValues[axisLabel];
-			m_maxValues[axisLabel] = tmpValue;
-
-			auto tmp = m_values[swappingAxis];
-			m_values[swappingAxis] = m_values[axis];
-			m_values[axis] = tmp;
-
-
-			// swap the axisLabel and axisIndex axis
-			auto tmpAxis = m_mappedAxis[swappingAxis];
-			m_mappedAxis[swappingAxis] = m_mappedAxis[axis];
-			m_mappedAxis[axis] = tmpAxis;
-
-			std::cout << " Resulting axis " << m_mappedAxis["X"] << ", " << m_mappedAxis["Y"] << ", " << m_mappedAxis["Z"] << std::endl;
+			if (value == axis)
+				return key;
 		}
-
 	}
 }
