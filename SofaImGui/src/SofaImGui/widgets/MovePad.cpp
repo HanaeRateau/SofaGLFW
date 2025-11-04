@@ -1,9 +1,9 @@
+#include <iomanip>
 #define IMGUI_DEFINE_MATH_OPERATORS // import math operators
 #include <SofaImGui/widgets/MovePad.h>
 
 #include <IconsFontAwesome6.h>
 #include <string>
-#include <format>
 
 namespace ImGui
 {
@@ -330,8 +330,14 @@ bool MovePad::show1DPadSlider(char const* label,
     }
 
     SameLine();
-    window->DC.CursorPos -= ImVec2(style.FramePadding.x, 0.);
-    Text("%s", std::format("{:.3f}", *p_value).c_str());
+
+    { // Slider value
+        window->DC.CursorPos -= ImVec2(style.FramePadding.x, 0.);
+        std::stringstream ss;
+        const int precision = (log10f(abs(p_max - p_min))>1)? 2: 3;
+        ss << std::fixed << std::setprecision(precision) << *p_value;
+        Text("%s", ss.str().c_str());
+    }
 
     // Add popup
     auto idPopup = "##ChangeAxis" + std::string(label);
