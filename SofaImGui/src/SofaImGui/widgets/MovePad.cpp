@@ -54,19 +54,18 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
     // TODO: Move those to style
     float grabThickness = style.ScrollbarSize / 5.f;
     float grabRadius = grabThickness * 2.5f;
-    double downScale = 1.f;
     double dragPadHThickness = grabThickness;
     double dragPadVThickness = grabThickness;
     double borderThickness = 2.0f;
     double lineThickness = 2.0f;
     double fCursorOff = 16.0f;
-    const double w = std::min(window->WorkRect.GetWidth(), ImGui::GetWindowSize().y);
-    const auto slidersRegionWidth = GetFrameHeight() * 8;
+    const auto slidersRegionWidth = GetFrameHeight() * 7;
 
-    const ImRect totalBB(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x, window->DC.CursorPos.y + w - slidersRegionWidth));
+    const ImRect totalBB(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x,
+                                                      window->DC.CursorPos.y + window->WorkRect.GetWidth()- slidersRegionWidth));
 
-    const ImVec2 containerSize = ImVec2(totalBB.GetWidth() * downScale, totalBB.GetHeight() - GetFrameHeight()*2.);
-    const ImRect frameBB(totalBB.GetCenter() - ImVec2(containerSize.x/2.0, containerSize.y/2.0 ),
+    const ImVec2 containerSize = ImVec2(totalBB.GetWidth(), totalBB.GetHeight() - GetFrameHeight()*2.);
+    const ImRect frameBB(totalBB.GetCenter() - ImVec2(containerSize.x/2.0, containerSize.y/2.0 - style.FramePadding.y ),
                          totalBB.GetCenter() + ImVec2(containerSize.x/2.0, containerSize.y/2.0));
 
     int padSize = frameBB.GetWidth() - slidersRegionWidth;
@@ -90,12 +89,17 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
         return false;
 
     { // Show sliders
+        const ImVec2 buttonSize = ImVec2(GetFrameHeight(), GetFrameHeight());
+
+        PushStyleColor(ImGuiCol_ButtonText, GetColorU32(ImGuiCol_Text));
         { // PadH
             window->DC.CursorPos = (ImVec2(framePadHBB.Min.x - GetFrameHeight() - style.FramePadding.x , framePadHBB.GetCenter().y - GetFrameHeight()/2));
-            if (Button(ICON_FA_ARROWS_LEFT_RIGHT"##PadH", ImVec2(GetFrameHeight(), GetFrameHeight())))
+            PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+            if (Button(ICON_FA_ARROWS_LEFT_RIGHT"##PadH", buttonSize))
             {
                 m_flippedAxis["PadH"] = !m_flippedAxis["PadH"];
             }
+            ImGui::PopStyleColor();
             show1DPadSlider(m_mappedAxis["PadH"], m_values["PadH"],
                             (m_flippedAxis["PadH"])?&m_maxValues["PadH"]:& m_minValues["PadH"],
                             (m_flippedAxis["PadH"])?&m_minValues["PadH"]:& m_maxValues["PadH"],
@@ -104,10 +108,12 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
 
         { // PadV
             window->DC.CursorPos = (ImVec2(framePadVBB.GetCenter().x - GetFrameHeight()/2, framePadVBB.Min.y - GetFrameHeight() - style.FramePadding.y));
-            if (Button(ICON_FA_ARROWS_UP_DOWN"##PadV", ImVec2(GetFrameHeight(), GetFrameHeight())))
+            PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+            if (Button(ICON_FA_ARROWS_UP_DOWN"##PadV", buttonSize))
             {
                 m_flippedAxis["PadV"] = !m_flippedAxis["PadV"];
             }
+            ImGui::PopStyleColor();
             show1DPadSlider(m_mappedAxis["PadV"], m_values["PadV"],
                             (m_flippedAxis["PadV"]) ? &m_maxValues["PadV"] : &m_minValues["PadV"],
                             (m_flippedAxis["PadV"]) ? &m_minValues["PadV"] : &m_maxValues["PadV"],
@@ -116,15 +122,18 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
 
         { // Slider
             window->DC.CursorPos = (ImVec2(frameSliderBB.GetCenter().x - GetFrameHeight()/2, frameSliderBB.Min.y - GetFrameHeight() - style.FramePadding.y));
-            if (Button(ICON_FA_ARROWS_UP_DOWN"##Slider", ImVec2(GetFrameHeight(), GetFrameHeight())))
+            PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+            if (Button(ICON_FA_ARROWS_UP_DOWN"##Slider", buttonSize))
             {
                 m_flippedAxis["Slider"] = !m_flippedAxis["Slider"];
             }
+            ImGui::PopStyleColor();
             show1DPadSlider(m_mappedAxis["Slider"], m_values["Slider"],
                             (m_flippedAxis["Slider"]) ? &m_maxValues["Slider"] : &m_minValues["Slider"],
                             (m_flippedAxis["Slider"]) ? &m_minValues["Slider"] : &m_maxValues["Slider"],
                             frameSliderBB, totalBB, m_grabBBSlider, idSlider, window, ImGuiSliderFlags_Vertical);
         }
+        ImGui::PopStyleColor();
     }
     // #region PAD
     bool hovered = ImGui::ItemHoverable(framePadBB, idPad, g.LastItemData.ItemFlags);
