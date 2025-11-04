@@ -37,7 +37,7 @@ MovePad::MovePad(const char* label, const char* labelPadH, const char* labelPadV
 /**
 * This widget is composed of a 2D pad and a vertical slider for the remaining dimension
 **/
-bool MovePad::showPad3D()
+bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if (window->SkipItems)
@@ -49,43 +49,41 @@ bool MovePad::showPad3D()
     ImGuiID idPadH = window->GetID(idPad);
     ImGuiID idPadV = window->GetID(idPadH);
     ImGuiID idSlider = window->GetID(idPadV);
+    const auto& wpos = ImGui::GetMainViewport()->Pos;
 
     // TODO: Move those to style
     float grabThickness = style.ScrollbarSize / 5.f;
     float grabRadius = grabThickness * 2.5f;
-    double downScale = 0.8f;
+    double downScale = 1.f;
     double dragPadHThickness = grabThickness;
     double dragPadVThickness = grabThickness;
     double borderThickness = 2.0f;
     double lineThickness = 2.0f;
-    ImU32 uBlue = ImGui::GetColorU32(ImGuiCol_FrameBgActive);
-    ImU32 uOrange = ImGui::GetColorU32(ImGuiCol_Button);
     double fCursorOff = 16.0f;
     const double w = std::min(window->WorkRect.GetWidth(), ImGui::GetWindowSize().y);
     const auto slidersRegionWidth = GetFrameHeight() * 8;
 
     const ImRect totalBB(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x, window->DC.CursorPos.y + w - slidersRegionWidth));
 
-    const ImVec2 containerSize = ImVec2(totalBB.GetWidth() * downScale, totalBB.GetHeight() - GetFrameHeight()*2.5);
-    const ImRect frameBB(totalBB.GetCenter() - ImVec2( containerSize.x/2.0 , containerSize.y / 2.0 ),
-                        totalBB.GetCenter() + ImVec2(containerSize.x / 2.0, containerSize.y / 2.0));
+    const ImVec2 containerSize = ImVec2(totalBB.GetWidth() * downScale, totalBB.GetHeight() - GetFrameHeight()*2.);
+    const ImRect frameBB(totalBB.GetCenter() - ImVec2(containerSize.x/2.0, containerSize.y/2.0 ),
+                         totalBB.GetCenter() + ImVec2(containerSize.x/2.0, containerSize.y/2.0));
 
     int padSize = frameBB.GetWidth() - slidersRegionWidth;
     padSize = std::min(frameBB.GetHeight(), std::max((float)padSize, frameBB.GetWidth() - slidersRegionWidth));
     auto padwidth = padSize + slidersRegionWidth + GetFrameHeight();
-    const ImRect framePadBB(frameBB.GetCenter() - ImVec2(padwidth/2. - GetFrameHeight(), padSize / 2.),
-                            frameBB.GetCenter() - ImVec2(padwidth / 2. - GetFrameHeight(), padSize / 2.) + ImVec2(padSize, padSize));
+    const ImRect framePadBB(frameBB.GetCenter() - ImVec2(padwidth/2. - GetFrameHeight(), padSize/2.),
+                            frameBB.GetCenter() - ImVec2(padwidth/2. - GetFrameHeight(), padSize/2.) + ImVec2(padSize, padSize));
 
-    const ImRect framePadHBB(ImVec2(framePadBB.Min.x, framePadBB.Max.y+style.FramePadding.y * 2),
-                            ImVec2(framePadBB.Max.x, framePadBB.Max.y + style.FramePadding.y * 2 + dragPadHThickness));
-    const ImRect framePadVBB(ImVec2(framePadBB.Max.x+style.FramePadding.x * 2, framePadBB.Min.y),
-                            ImVec2(framePadBB.Max.x + style.FramePadding.x * 2 + dragPadVThickness, framePadBB.Max.y));
+    const ImRect framePadHBB(ImVec2(framePadBB.Min.x, framePadBB.Max.y + style.FramePadding.y * 2),
+                             ImVec2(framePadBB.Max.x, framePadBB.Max.y + style.FramePadding.y * 2 + dragPadHThickness));
+    const ImRect framePadVBB(ImVec2(framePadBB.Max.x + style.FramePadding.x * 2, framePadBB.Min.y),
+                             ImVec2(framePadBB.Max.x + style.FramePadding.x * 2 + dragPadVThickness, framePadBB.Max.y));
     const ImRect frameSliderBB(ImVec2(framePadVBB.Max.x + slidersRegionWidth/2., framePadBB.Min.y),
-                            ImVec2(framePadVBB.Max.x + slidersRegionWidth/2. + dragPadVThickness, framePadBB.Max.y));
+                               ImVec2(framePadVBB.Max.x + slidersRegionWidth/2. + dragPadVThickness, framePadBB.Max.y));
 
     double fXLimit = fCursorOff / framePadBB.GetWidth();
     double fYLimit = fCursorOff / framePadBB.GetHeight();
-
 
     ImGui::ItemSize(totalBB, style.FramePadding.y);
     if (!ImGui::ItemAdd(totalBB, idPad, &frameBB, 0))
@@ -116,7 +114,7 @@ bool MovePad::showPad3D()
                             framePadVBB, totalBB, m_grabBBPadV, idPadV, window, ImGuiSliderFlags_Vertical);
         }
 
-        {// Slider
+        { // Slider
             window->DC.CursorPos = (ImVec2(frameSliderBB.GetCenter().x - GetFrameHeight()/2, frameSliderBB.Min.y - GetFrameHeight() - style.FramePadding.y));
             if (Button(ICON_FA_ARROWS_UP_DOWN"##Slider", ImVec2(GetFrameHeight(), GetFrameHeight())))
             {
@@ -156,9 +154,12 @@ bool MovePad::showPad3D()
 
     if (ImGui::IsKeyPressed(ImGuiKey_LeftCtrl, false))
     {
+        // When setting the mouse position, the value is relative to the window top left corner
+        // Thus we need to compute the shifts between this position and the top left corner of the current window area
         m_mousePosPad = ImGui::GetIO().MousePos; // save mouse position when pressing ctrl
-        ImGui::TeleportMousePos(m_grabBBSlider.GetCenter());
-
+        const auto &center = m_grabBBSlider.GetCenter();
+        baseGUI->setMousePos(center.x - wpos.x, center.y - wpos.y); // Needed for Wayland
+        ImGui::TeleportMousePos(center);
     }
     else if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
     {
@@ -171,7 +172,9 @@ bool MovePad::showPad3D()
     {
         if (m_mousePosPad.x > 0)
         {
-            ImGui::TeleportMousePos(ImVec2(m_grabPad.GetCenter().x, m_grabPad.GetCenter().y));
+            const auto &center = m_grabPad.GetCenter();
+            baseGUI->setMousePos(center.x - wpos.x, center.y - wpos.y); // Needed for Wayland
+            ImGui::TeleportMousePos(center);
             m_mousePosPad = ImVec2(-1, -1);
         }
 
@@ -192,55 +195,58 @@ bool MovePad::showPad3D()
 
     ImDrawList* pDrawList = window->DrawList;
 
-    float deltaPadH = m_maxValues["PadH"] - m_minValues["PadH"];
-    float deltaPadV = m_maxValues["PadV"] - m_minValues["PadV"];
-    float fScaleX = (*m_values["PadH"] - m_minValues["PadH"]) / deltaPadH;
-    float fScaleY = 1.0f - ((*m_values["PadV"] - m_minValues["PadV"]) / deltaPadV);
-    ImVec2 vCursorPos(m_grabBBPadH.GetCenter().x, m_grabBBPadV.GetCenter().y);
+    { // Draw Pad
+        ImU32 padBorderColor = ImGui::GetColorU32(ImGuiCol_FrameBgActive);
+        ImU32 padInColor = ImGui::GetColorU32(ImGuiCol_HeaderHovered);
+        float deltaPadH = m_maxValues["PadH"] - m_minValues["PadH"];
+        float deltaPadV = m_maxValues["PadV"] - m_minValues["PadV"];
+        float fScaleX = (*m_values["PadH"] - m_minValues["PadH"]) / deltaPadH;
+        float fScaleY = 1.0f - ((*m_values["PadV"] - m_minValues["PadV"]) / deltaPadV);
+        ImVec2 vCursorPos(m_grabBBPadH.GetCenter().x, m_grabBBPadV.GetCenter().y);
 
-    // Cursor
-    window->DrawList->AddCircleFilled(vCursorPos, grabRadius * 1.2f, GetColorU32(g.ActiveId == idPad ? ImGuiCol_SliderGrabActive : ImGuiCol_Button));
-    window->DrawList->AddCircleFilled(vCursorPos, grabRadius, GetColorU32(ImGuiCol_SliderGrab));
+        // Cursor
+        window->DrawList->AddCircleFilled(vCursorPos, grabRadius * 1.2f, GetColorU32(g.ActiveId == idPad ? ImGuiCol_SliderGrabActive : ImGuiCol_Button));
+        window->DrawList->AddCircleFilled(vCursorPos, grabRadius, GetColorU32(ImGuiCol_SliderGrab));
 
-    // Vertical Line
-    if (fScaleY > 2.0f * fYLimit)
-        pDrawList->AddLine(ImVec2(vCursorPos.x, framePadBB.Min.y + fCursorOff), ImVec2(vCursorPos.x, vCursorPos.y - fCursorOff), uOrange, lineThickness);
-    if (fScaleY < 1.0f - 2.0f * fYLimit)
-        pDrawList->AddLine(ImVec2(vCursorPos.x, framePadBB.Max.y - fCursorOff), ImVec2(vCursorPos.x, vCursorPos.y + fCursorOff), uOrange, lineThickness);
+        // Vertical Line
+        if (fScaleY > 2.0f * fYLimit)
+            pDrawList->AddLine(ImVec2(vCursorPos.x, framePadBB.Min.y + fCursorOff), ImVec2(vCursorPos.x, vCursorPos.y - fCursorOff), padInColor, lineThickness);
+        if (fScaleY < 1.0f - 2.0f * fYLimit)
+            pDrawList->AddLine(ImVec2(vCursorPos.x, framePadBB.Max.y - fCursorOff), ImVec2(vCursorPos.x, vCursorPos.y + fCursorOff), padInColor, lineThickness);
 
-    // Horizontal Line
-    if (fScaleX > 2.0f * fXLimit)
-        pDrawList->AddLine(ImVec2(framePadBB.Min.x + fCursorOff, vCursorPos.y), ImVec2(vCursorPos.x - fCursorOff, vCursorPos.y), uOrange, lineThickness);
-    if (fScaleX < 1.0f - 2.0f * fYLimit)
-        pDrawList->AddLine(ImVec2(framePadBB.Max.x - fCursorOff, vCursorPos.y), ImVec2(vCursorPos.x + fCursorOff, vCursorPos.y), uOrange, lineThickness);
+        // Horizontal Line
+        if (fScaleX > 2.0f * fXLimit)
+            pDrawList->AddLine(ImVec2(framePadBB.Min.x + fCursorOff, vCursorPos.y), ImVec2(vCursorPos.x - fCursorOff, vCursorPos.y), padInColor, lineThickness);
+        if (fScaleX < 1.0f - 2.0f * fYLimit)
+            pDrawList->AddLine(ImVec2(framePadBB.Max.x - fCursorOff, vCursorPos.y), ImVec2(vCursorPos.x + fCursorOff, vCursorPos.y), padInColor, lineThickness);
 
-    // Borders::Right
-    pDrawList->AddCircleFilled(ImVec2(framePadBB.Max.x, vCursorPos.y), 2.0f, uOrange, 3);
-    // Handle Right::Y
-    if (fScaleY > fYLimit)
-        pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Min.y), ImVec2(framePadBB.Max.x, vCursorPos.y - fCursorOff), uBlue, borderThickness);
-    if (fScaleY < 1.0f - fYLimit)
-        pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Max.y), ImVec2(framePadBB.Max.x, vCursorPos.y + fCursorOff), uBlue, borderThickness);
-    // Borders::Top
-    pDrawList->AddCircleFilled(ImVec2(vCursorPos.x, framePadBB.Min.y), 2.0f, uOrange, 3);
-    if (fScaleX > fXLimit)
-        pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Min.y), ImVec2(vCursorPos.x - fCursorOff, framePadBB.Min.y), uBlue, borderThickness);
-    if (fScaleX < 1.0f - fXLimit)
-        pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Min.y), ImVec2(vCursorPos.x + fCursorOff, framePadBB.Min.y), uBlue, borderThickness);
-    // Borders::Left
-    pDrawList->AddCircleFilled(ImVec2(framePadBB.Min.x, vCursorPos.y), 2.0f, uOrange, 3);
-    if (fScaleY > fYLimit)
-        pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Min.y), ImVec2(framePadBB.Min.x, vCursorPos.y - fCursorOff), uBlue, borderThickness);
-    if (fScaleY < 1.0f - fYLimit)
-        pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Max.y), ImVec2(framePadBB.Min.x, vCursorPos.y + fCursorOff), uBlue, borderThickness);
-    // Borders::Bottom
-    pDrawList->AddCircleFilled(ImVec2(vCursorPos.x, framePadBB.Max.y), 2.0f, uOrange, 3);
-    // Handle Bottom::X
-    if (fScaleX > fXLimit)
-        pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Max.y), ImVec2(vCursorPos.x - fCursorOff, framePadBB.Max.y), uBlue, borderThickness);
-    if (fScaleX < 1.0f - fXLimit)
-        pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Max.y), ImVec2(vCursorPos.x + fCursorOff, framePadBB.Max.y), uBlue, borderThickness);
-
+        // Borders::Right
+        pDrawList->AddCircleFilled(ImVec2(framePadBB.Max.x, vCursorPos.y), 2.0f, padInColor, 3);
+        // Handle Right::Y
+        if (fScaleY > fYLimit)
+            pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Min.y), ImVec2(framePadBB.Max.x, vCursorPos.y - fCursorOff), padBorderColor, borderThickness);
+        if (fScaleY < 1.0f - fYLimit)
+            pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Max.y), ImVec2(framePadBB.Max.x, vCursorPos.y + fCursorOff), padBorderColor, borderThickness);
+        // Borders::Top
+        pDrawList->AddCircleFilled(ImVec2(vCursorPos.x, framePadBB.Min.y), 2.0f, padInColor, 3);
+        if (fScaleX > fXLimit)
+            pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Min.y), ImVec2(vCursorPos.x - fCursorOff, framePadBB.Min.y), padBorderColor, borderThickness);
+        if (fScaleX < 1.0f - fXLimit)
+            pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Min.y), ImVec2(vCursorPos.x + fCursorOff, framePadBB.Min.y), padBorderColor, borderThickness);
+        // Borders::Left
+        pDrawList->AddCircleFilled(ImVec2(framePadBB.Min.x, vCursorPos.y), 2.0f, padInColor, 3);
+        if (fScaleY > fYLimit)
+            pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Min.y), ImVec2(framePadBB.Min.x, vCursorPos.y - fCursorOff), padBorderColor, borderThickness);
+        if (fScaleY < 1.0f - fYLimit)
+            pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Max.y), ImVec2(framePadBB.Min.x, vCursorPos.y + fCursorOff), padBorderColor, borderThickness);
+        // Borders::Bottom
+        pDrawList->AddCircleFilled(ImVec2(vCursorPos.x, framePadBB.Max.y), 2.0f, padInColor, 3);
+        // Handle Bottom::X
+        if (fScaleX > fXLimit)
+            pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Max.y), ImVec2(vCursorPos.x - fCursorOff, framePadBB.Max.y), padBorderColor, borderThickness);
+        if (fScaleX < 1.0f - fXLimit)
+            pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Max.y), ImVec2(vCursorPos.x + fCursorOff, framePadBB.Max.y), padBorderColor, borderThickness);
+    }
     // #endregion PAD
 
     window->DC.CursorPos = framePadHBB.GetBL() + ImVec2(0., GetFrameHeight());

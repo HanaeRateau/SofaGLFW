@@ -34,7 +34,7 @@ class SOFAIMGUI_API MoveWindow : public BaseWindow
     MoveWindow(const std::string& name, const bool& isWindowOpen);
     ~MoveWindow() = default;
 
-    void showWindow(const ImGuiWindowFlags &windowFlags);
+    void showWindow(sofaglfw::SofaGLFWBaseGUI *baseGUI, const ImGuiWindowFlags &windowFlags);
 
     void setTCPDescriptions(const std::string &positionDescription, const std::string &rotationDescription);
     void setIPController(models::IPController::SPtr IPController) {m_IPController=IPController;}
@@ -91,7 +91,7 @@ class SOFAIMGUI_API MoveWindow : public BaseWindow
     bool showSliderDouble(const char *name, const char* label1, const char *label2, double* v, const double& min, const double& max);
     void showOptions();
     void showWeightOption(const int &index);
-    void showPad();
+    void showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI);
 };
 
 }

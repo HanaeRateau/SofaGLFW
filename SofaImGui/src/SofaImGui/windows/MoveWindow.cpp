@@ -103,7 +103,7 @@ void MoveWindow::setActuatorLimits(const sofa::Index &id, const double &min, con
     }
 }
 
-void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
+void MoveWindow::showWindow(sofaglfw::SofaGLFWBaseGUI* baseGUI, const ImGuiWindowFlags &windowFlags)
 {
     if (enabled() && isOpen())
     {
@@ -132,7 +132,7 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
                         m_movePad.setBounds("X", m_TCPMinPosition + initPosition[0], m_TCPMaxPosition + initPosition[0]);
                         m_movePad.setBounds("Y", m_TCPMinPosition + initPosition[1], m_TCPMaxPosition + initPosition[1]);
                         m_movePad.setBounds("Z", m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2]);
-                        showPad();
+                        showPad(baseGUI);
                     }
                     if (tcpPosMethod == 1)
                     {
@@ -372,10 +372,10 @@ void MoveWindow::showWeightOption(const int &i)
     weight[i] = w;
 }
 
-void MoveWindow::showPad()
+void MoveWindow::showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI)
 {
     // XY Pad
-    m_movePad.showPad3D();
+    m_movePad.showPad3D(baseGUI);
 }
 
 }
