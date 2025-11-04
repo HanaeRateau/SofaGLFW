@@ -14,29 +14,29 @@ namespace ImGui
 		m_label = "";
 	}
 
-	MovePad::MovePad(const char* label, const char* labelX, const char* labelY, const char* labelZ,
-		double* p_valueX, double* p_valueY, double* p_valueZ,
-		const double* p_minX, const double* p_maxX,
-		const double* p_minY, const double* p_maxY,
-		const double* p_minZ, const double* p_maxZ)
+	MovePad::MovePad(const char* label, const char* labelPadH, const char* labelPadV, const char* labelSlider,
+		double* valuePadH, double* valuePadV, double* valueSlider,
+		const double* minPadH, const double* maxPadH,
+		const double* minPadV, const double* maxPadV,
+		const double* minSlider, const double* maxSlider)
 	{
 
 		m_label = label;
-		m_mappedAxis["PadH"] = labelX;
-		m_mappedAxis["PadV"] = labelY;
-		m_mappedAxis["Slider"] = labelZ;
+		m_mappedAxis["PadH"] = labelPadH;
+		m_mappedAxis["PadV"] = labelPadV;
+		m_mappedAxis["Slider"] = labelSlider;
 
-		m_minValues["PadH"] = *p_minX;
-		m_minValues["PadV"] = *p_minY;
-		m_minValues["Slider"] = *p_minZ;
+		m_minValues["PadH"] = *minPadH;
+		m_minValues["PadV"] = *minPadV;
+		m_minValues["Slider"] = *minSlider;
 
-		m_maxValues["PadH"] = *p_maxX;
-		m_maxValues["PadV"] = *p_maxY;
-		m_maxValues["Slider"] = *p_maxZ;
+		m_maxValues["PadH"] = *maxPadH;
+		m_maxValues["PadV"] = *maxPadV;
+		m_maxValues["Slider"] = *maxSlider;
 
-		m_values["PadH"] = p_valueX;
-		m_values["PadV"] = p_valueY;
-		m_values["Slider"] = p_valueZ;
+		m_values["PadH"] = valuePadH;
+		m_values["PadV"] = valuePadV;
+		m_values["Slider"] = valueSlider;
 	}
 
 
@@ -51,25 +51,21 @@ namespace ImGui
 
 		ImGuiContext& g = *GImGui;
 		const ImGuiStyle& style = g.Style;
-		const ImGuiID idXY = window->GetID(m_label);
-		ImGuiID idX = window->GetID(idXY);
-		ImGuiID idY = window->GetID(idX);
-		ImGuiID idZ = window->GetID(idY);
+		const ImGuiID idPad = window->GetID(m_label);
+		ImGuiID idPadH = window->GetID(idPad);
+		ImGuiID idPadV = window->GetID(idPadH);
+		ImGuiID idSlider = window->GetID(idPadV);
 
 		// TODO: Move those to style
 		float grabThickness = style.ScrollbarSize / 5.f;
 		float grabRadius = grabThickness * 2.5f;
 		double downScale = 0.8f;
-		double dragX_placement = 0.1f;
+		double dragPadHPlacement = 0.1f;
 		double dragY_placement = 0.1f;
-		double dragX_thickness = grabThickness;
-		double dragY_thickness = grabThickness;
-		double border_thickness = 2.0f;
-		double line_thickness = 2.0f;
-		double text_lerp_x = 0.5f;
-		double text_lerp_y = 0.5f;
-		double cursor_radius = 4.0f;
-		int cursor_segments = 4;
+		double dragPadHThickness = grabThickness;
+		double dragPadVThickness = grabThickness;
+		double borderThickness = 2.0f;
+		double lineThickness = 2.0f;
 		ImVec4 vBlue(91.0f / 255.0f, 194.0f / 255.0f, 231.0f / 255.0f, 1.0f); // TODO: choose from style
 		ImVec4 vOrange(255.0f / 255.0f, 128.0f / 255.0f, 64.0f / 255.0f, 1.0f); // TODO: choose from style
 		ImU32 uBlue = ImGui::GetColorU32(ImGuiCol_FrameBgActive);
@@ -79,197 +75,194 @@ namespace ImGui
 		const auto slidersRegionWidth = GetFrameHeight() * 8;
 
 
-		const ImRect total_bb(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x, window->DC.CursorPos.y + w - slidersRegionWidth));
-		//ImGui::RenderFrame(total_bb.Min, total_bb.Max, GetColorU32(ImGuiCol_Button), true, g.Style.FrameRounding);
+		const ImRect totalBB(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x, window->DC.CursorPos.y + w - slidersRegionWidth));
 		
-		const ImVec2 containerSize = ImVec2(total_bb.GetWidth() * downScale, total_bb.GetHeight() - GetFrameHeight()*2.5);
-		const ImRect frame_bb(total_bb.GetCenter() - ImVec2( containerSize.x/2.0 , containerSize.y / 2.0 ),
-			total_bb.GetCenter() + ImVec2(containerSize.x / 2.0, containerSize.y / 2.0));
-		//ImGui::RenderFrame(frame_bb.Min, frame_bb.Max, GetColorU32(ImGuiCol_ButtonHovered), true, g.Style.FrameRounding);
+		const ImVec2 containerSize = ImVec2(totalBB.GetWidth() * downScale, totalBB.GetHeight() - GetFrameHeight()*2.5);
+		const ImRect frameBB(totalBB.GetCenter() - ImVec2( containerSize.x/2.0 , containerSize.y / 2.0 ),
+			totalBB.GetCenter() + ImVec2(containerSize.x / 2.0, containerSize.y / 2.0));
 
-		int padSize = frame_bb.GetWidth() - slidersRegionWidth;
-		padSize = std::min(frame_bb.GetHeight(), std::max((float)padSize, frame_bb.GetWidth() - slidersRegionWidth));
+		int padSize = frameBB.GetWidth() - slidersRegionWidth;
+		padSize = std::min(frameBB.GetHeight(), std::max((float)padSize, frameBB.GetWidth() - slidersRegionWidth));
 		auto padwidth = padSize + slidersRegionWidth + GetFrameHeight();
-		const ImRect frame_bb_drag(frame_bb.GetCenter() - ImVec2(padwidth/2. - GetFrameHeight(), padSize / 2.),
-			frame_bb.GetCenter() - ImVec2(padwidth / 2. - GetFrameHeight(), padSize / 2.) + ImVec2(padSize, padSize));
+		const ImRect framePadBB(frameBB.GetCenter() - ImVec2(padwidth/2. - GetFrameHeight(), padSize / 2.),
+			frameBB.GetCenter() - ImVec2(padwidth / 2. - GetFrameHeight(), padSize / 2.) + ImVec2(padSize, padSize));
 
-		const ImRect frame_bb_dragX(ImVec2(frame_bb_drag.Min.x, frame_bb_drag.Max.y+style.FramePadding.y * 2),
-			ImVec2(frame_bb_drag.Max.x, frame_bb_drag.Max.y + style.FramePadding.y * 2 + dragX_thickness));
-		const ImRect frame_bb_dragY(ImVec2(frame_bb_drag.Max.x+style.FramePadding.x * 2, frame_bb_drag.Min.y),
-			ImVec2(frame_bb_drag.Max.x + style.FramePadding.x * 2 + dragY_thickness, frame_bb_drag.Max.y));
-		const ImRect frame_bb_dragZ(ImVec2(frame_bb_dragY.Max.x + slidersRegionWidth/2., frame_bb_drag.Min.y),
-			ImVec2(frame_bb_dragY.Max.x + slidersRegionWidth/2. + dragY_thickness, frame_bb_drag.Max.y));
+		const ImRect framePadHBB(ImVec2(framePadBB.Min.x, framePadBB.Max.y+style.FramePadding.y * 2),
+			ImVec2(framePadBB.Max.x, framePadBB.Max.y + style.FramePadding.y * 2 + dragPadHThickness));
+		const ImRect framePadVBB(ImVec2(framePadBB.Max.x+style.FramePadding.x * 2, framePadBB.Min.y),
+			ImVec2(framePadBB.Max.x + style.FramePadding.x * 2 + dragPadVThickness, framePadBB.Max.y));
+		const ImRect frameSliderBB(ImVec2(framePadVBB.Max.x + slidersRegionWidth/2., framePadBB.Min.y),
+			ImVec2(framePadVBB.Max.x + slidersRegionWidth/2. + dragPadVThickness, framePadBB.Max.y));
 
-		double fXLimit = fCursorOff / frame_bb_drag.GetWidth();
-		double fYLimit = fCursorOff / frame_bb_drag.GetHeight();
+		double fXLimit = fCursorOff / framePadBB.GetWidth();
+		double fYLimit = fCursorOff / framePadBB.GetHeight();
 
 
-		ImGui::ItemSize(total_bb, style.FramePadding.y);
-		if (!ImGui::ItemAdd(total_bb, idXY, &frame_bb, 0))
+		ImGui::ItemSize(totalBB, style.FramePadding.y);
+		if (!ImGui::ItemAdd(totalBB, idPad, &frameBB, 0))
 			return false;		
 
 		// Show sliders
 		// PadH
-		window->DC.CursorPos = (ImVec2(frame_bb_dragX.Min.x - GetFrameHeight() - style.FramePadding.x , frame_bb_dragX.GetCenter().y - GetFrameHeight()/2));
+		window->DC.CursorPos = (ImVec2(framePadHBB.Min.x - GetFrameHeight() - style.FramePadding.x , framePadHBB.GetCenter().y - GetFrameHeight()/2));
 		if (Button(ICON_FA_ARROWS_LEFT_RIGHT"##PadH", ImVec2(GetFrameHeight(), GetFrameHeight())))
 		{
 			m_flippedAxis["PadH"] = !m_flippedAxis["PadH"];
 		}
 		show1DPadSlider(m_mappedAxis["PadH"], m_values["PadH"],
 			(m_flippedAxis["PadH"])?&m_maxValues["PadH"]:& m_minValues["PadH"], 
-			(m_flippedAxis["PadH"])?&m_minValues["PadH"]:& m_maxValues["PadH"], frame_bb_dragX, total_bb, m_grabBBX, idX, window);
+			(m_flippedAxis["PadH"])?&m_minValues["PadH"]:& m_maxValues["PadH"], framePadHBB, totalBB, m_grabBBPadH, idPadH, window);
 
 		// PadV
-		window->DC.CursorPos = (ImVec2(frame_bb_dragY.GetCenter().x - GetFrameHeight()/2, frame_bb_dragY.Min.y - GetFrameHeight() - style.FramePadding.y));
+		window->DC.CursorPos = (ImVec2(framePadVBB.GetCenter().x - GetFrameHeight()/2, framePadVBB.Min.y - GetFrameHeight() - style.FramePadding.y));
 		if (Button(ICON_FA_ARROWS_UP_DOWN"##PadV", ImVec2(GetFrameHeight(), GetFrameHeight())))
 		{
 			m_flippedAxis["PadV"] = !m_flippedAxis["PadV"];
 		}
 		show1DPadSlider(m_mappedAxis["PadV"], m_values["PadV"], 
 			(m_flippedAxis["PadV"]) ? &m_maxValues["PadV"] : &m_minValues["PadV"],
-			(m_flippedAxis["PadV"]) ? &m_minValues["PadV"] : &m_maxValues["PadV"], frame_bb_dragY, total_bb, m_grabBBY, idY, window, ImGuiSliderFlags_Vertical);
+			(m_flippedAxis["PadV"]) ? &m_minValues["PadV"] : &m_maxValues["PadV"], framePadVBB, totalBB, m_grabBBPadV, idPadV, window, ImGuiSliderFlags_Vertical);
 
 		// Slider
-		window->DC.CursorPos = (ImVec2(frame_bb_dragZ.GetCenter().x - GetFrameHeight()/2, frame_bb_dragZ.Min.y - GetFrameHeight() - style.FramePadding.y));
+		window->DC.CursorPos = (ImVec2(frameSliderBB.GetCenter().x - GetFrameHeight()/2, frameSliderBB.Min.y - GetFrameHeight() - style.FramePadding.y));
 		if (Button(ICON_FA_ARROWS_UP_DOWN"##Slider", ImVec2(GetFrameHeight(), GetFrameHeight())))
 		{
 			m_flippedAxis["Slider"] = !m_flippedAxis["Slider"];
 		}
 		show1DPadSlider(m_mappedAxis["Slider"], m_values["Slider"], 
 			(m_flippedAxis["Slider"]) ? &m_maxValues["Slider"] : &m_minValues["Slider"],
-			(m_flippedAxis["Slider"]) ? &m_minValues["Slider"] : &m_maxValues["Slider"], frame_bb_dragZ, total_bb, m_grabBBZ, idZ, window, ImGuiSliderFlags_Vertical);
+			(m_flippedAxis["Slider"]) ? &m_minValues["Slider"] : &m_maxValues["Slider"], frameSliderBB, totalBB, m_grabBBSlider, idSlider, window, ImGuiSliderFlags_Vertical);
 
 		// #region PAD
-		bool hovered = ImGui::ItemHoverable(frame_bb_drag, idXY, g.LastItemData.ItemFlags);
+		bool hovered = ImGui::ItemHoverable(framePadBB, idPad, g.LastItemData.ItemFlags);
 
-		bool clicked = hovered && ImGui::IsMouseClicked(0, ImGuiInputFlags_None, idXY);
-		bool make_active = (clicked || g.NavActivateId == idXY);
-		if (make_active && clicked)
-			ImGui::SetKeyOwner(ImGuiKey_MouseLeft, idXY);
+		bool clicked = hovered && ImGui::IsMouseClicked(0, ImGuiInputFlags_None, idPad);
+		bool makeActive = (clicked || g.NavActivateId == idPad);
+		if (makeActive && clicked)
+			ImGui::SetKeyOwner(ImGuiKey_MouseLeft, idPad);
 
-		if (make_active)
+		if (makeActive)
 		{
-			ImGui::SetActiveID(idXY, window);
-			ImGui::SetFocusID(idXY, window);
+			ImGui::SetActiveID(idPad, window);
+			ImGui::SetFocusID(idPad, window);
 			ImGui::FocusWindow(window);
 			g.ActiveIdUsingNavDirMask |= (1 << ImGuiDir_Left) | (1 << ImGuiDir_Right);
 		}
 
 		// Draw frame
-		ImU32 frame_col = ImGui::GetColorU32(g.ActiveId == idXY ? ImGuiCol_FrameBgHovered : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
-		ImGui::RenderNavCursor(frame_bb_drag, idXY);
-		ImGui::RenderFrame(frame_bb_drag.Min, frame_bb_drag.Max, frame_col, true, g.Style.FrameRounding);
+		ImU32 frameColor = ImGui::GetColorU32(g.ActiveId == idPad ? ImGuiCol_FrameBgHovered : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
+		ImGui::RenderNavCursor(framePadBB, idPad);
+		ImGui::RenderFrame(framePadBB.Min, framePadBB.Max, frameColor, true, g.Style.FrameRounding);
 
 		// Slider behavior
 		double zero = 0.0f;
 		double one = 1.0f;
-		bool value_changedX = false;
-		bool value_changedY = false;
-		bool value_changedZ = false;
+		bool valuePadHChanged = false;
+		bool valuePadVChanged = false;
+		bool valueSliderChanged = false;
 
 		if (ImGui::IsKeyPressed(ImGuiKey_LeftCtrl, false)) 
 		{
 			m_mousePosPad = ImGui::GetIO().MousePos; // save mouse position when pressing ctrl
-			ImGui::TeleportMousePos(m_grabBBZ.GetCenter());
+			ImGui::TeleportMousePos(m_grabBBSlider.GetCenter());
 
 		}
 		else if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
 		{
-			value_changedZ = ImGui::SliderBehavior(frame_bb_drag, idXY, ImGuiDataType_Double, m_values["Slider"], 
+			valueSliderChanged = ImGui::SliderBehavior(framePadBB, idPad, ImGuiDataType_Double, m_values["Slider"], 
 				(m_flippedAxis["Slider"]) ? &m_maxValues["Slider"] : &m_minValues["Slider"],
-				(m_flippedAxis["Slider"]) ? &m_minValues["Slider"] : &m_maxValues["Slider"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Vertical, &m_grabBBZ);
+				(m_flippedAxis["Slider"]) ? &m_minValues["Slider"] : &m_maxValues["Slider"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Vertical, &m_grabBBSlider);
 		}
 		else
 		{
 			if (m_mousePosPad.x > 0)
 			{
-				ImGui::TeleportMousePos(ImVec2(m_grabXY.GetCenter().x, m_grabXY.GetCenter().y));
+				ImGui::TeleportMousePos(ImVec2(m_grabPad.GetCenter().x, m_grabPad.GetCenter().y));
 				m_mousePosPad = ImVec2(-1, -1);
 			}
 
-			value_changedX = ImGui::SliderBehavior(frame_bb_drag, idXY, ImGuiDataType_Double, m_values["PadH"], 
+			valuePadHChanged = ImGui::SliderBehavior(framePadBB, idPad, ImGuiDataType_Double, m_values["PadH"], 
 				(m_flippedAxis["PadH"]) ? &m_maxValues["PadH"] : &m_minValues["PadH"], 
-				(m_flippedAxis["PadH"]) ? &m_minValues["PadH"] : &m_maxValues["PadH"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat, &m_grabXY);
-			ImRect tempGrab(m_grabXY);
-			value_changedY = ImGui::SliderBehavior(frame_bb_drag, idXY, ImGuiDataType_Double, m_values["PadV"], 
+				(m_flippedAxis["PadH"]) ? &m_minValues["PadH"] : &m_maxValues["PadH"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat, &m_grabPad);
+			ImRect tempGrab(m_grabPad);
+			valuePadVChanged = ImGui::SliderBehavior(framePadBB, idPad, ImGuiDataType_Double, m_values["PadV"], 
 				(m_flippedAxis["PadV"]) ? &m_maxValues["PadV"] : &m_minValues["PadV"], 
-				(m_flippedAxis["PadV"]) ? &m_minValues["PadV"] : &m_maxValues["PadV"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Vertical, &m_grabXY);
-			m_grabXY.Min.x = tempGrab.Min.x;
-			m_grabXY.Max.x = tempGrab.Max.x;
-			if (value_changedX || value_changedY)
-				ImGui::MarkItemEdited(idXY);
+				(m_flippedAxis["PadV"]) ? &m_minValues["PadV"] : &m_maxValues["PadV"], NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Vertical, &m_grabPad);
+			m_grabPad.Min.x = tempGrab.Min.x;
+			m_grabPad.Max.x = tempGrab.Max.x;
+			if (valuePadHChanged || valuePadVChanged)
+				ImGui::MarkItemEdited(idPad);
 		}
 
 		ImDrawList* pDrawList = window->DrawList;
 
-		float s_delta_x = m_maxValues["PadH"] - m_minValues["PadH"];
-		float s_delta_y = m_maxValues["PadV"] - m_minValues["PadV"];
-		float fScaleX = (*m_values["PadH"] - m_minValues["PadH"]) / s_delta_x;
-		float fScaleY = 1.0f - ((*m_values["PadV"] - m_minValues["PadV"]) / s_delta_y);
-		ImVec2 vCursorPos(m_grabBBX.GetCenter().x, m_grabBBY.GetCenter().y);
+		float deltaPadH = m_maxValues["PadH"] - m_minValues["PadH"];
+		float deltaPadV = m_maxValues["PadV"] - m_minValues["PadV"];
+		float fScaleX = (*m_values["PadH"] - m_minValues["PadH"]) / deltaPadH;
+		float fScaleY = 1.0f - ((*m_values["PadV"] - m_minValues["PadV"]) / deltaPadV);
+		ImVec2 vCursorPos(m_grabBBPadH.GetCenter().x, m_grabBBPadV.GetCenter().y);
 
 		char const* formatX = ImGui::DataTypeGetInfo(ImGuiDataType_Double)->PrintFmt;
 		char const* formatY = ImGui::DataTypeGetInfo(ImGuiDataType_Double)->PrintFmt;
 
 		// Cursor
-		//pDrawList->AddCircleFilled(vCursorPos, cursor_radius, uBlue, cursor_segments);
-		window->DrawList->AddCircleFilled(vCursorPos, grabRadius * 1.2f, GetColorU32(g.ActiveId == idXY ? ImGuiCol_SliderGrabActive : ImGuiCol_Button));
+		window->DrawList->AddCircleFilled(vCursorPos, grabRadius * 1.2f, GetColorU32(g.ActiveId == idPad ? ImGuiCol_SliderGrabActive : ImGuiCol_Button));
 		window->DrawList->AddCircleFilled(vCursorPos, grabRadius, GetColorU32(ImGuiCol_SliderGrab));
 
 		// Vertical Line
 		if (fScaleY > 2.0f * fYLimit)
-			pDrawList->AddLine(ImVec2(vCursorPos.x, frame_bb_drag.Min.y + fCursorOff), ImVec2(vCursorPos.x, vCursorPos.y - fCursorOff), uOrange, line_thickness);
+			pDrawList->AddLine(ImVec2(vCursorPos.x, framePadBB.Min.y + fCursorOff), ImVec2(vCursorPos.x, vCursorPos.y - fCursorOff), uOrange, lineThickness);
 		if (fScaleY < 1.0f - 2.0f * fYLimit)
-			pDrawList->AddLine(ImVec2(vCursorPos.x, frame_bb_drag.Max.y - fCursorOff), ImVec2(vCursorPos.x, vCursorPos.y + fCursorOff), uOrange, line_thickness);
+			pDrawList->AddLine(ImVec2(vCursorPos.x, framePadBB.Max.y - fCursorOff), ImVec2(vCursorPos.x, vCursorPos.y + fCursorOff), uOrange, lineThickness);
 
 		// Horizontal Line
 		if (fScaleX > 2.0f * fXLimit)
-			pDrawList->AddLine(ImVec2(frame_bb_drag.Min.x + fCursorOff, vCursorPos.y), ImVec2(vCursorPos.x - fCursorOff, vCursorPos.y), uOrange, line_thickness);
+			pDrawList->AddLine(ImVec2(framePadBB.Min.x + fCursorOff, vCursorPos.y), ImVec2(vCursorPos.x - fCursorOff, vCursorPos.y), uOrange, lineThickness);
 		if (fScaleX < 1.0f - 2.0f * fYLimit)
-			pDrawList->AddLine(ImVec2(frame_bb_drag.Max.x - fCursorOff, vCursorPos.y), ImVec2(vCursorPos.x + fCursorOff, vCursorPos.y), uOrange, line_thickness);
+			pDrawList->AddLine(ImVec2(framePadBB.Max.x - fCursorOff, vCursorPos.y), ImVec2(vCursorPos.x + fCursorOff, vCursorPos.y), uOrange, lineThickness);
 
 		// Borders::Right
-		pDrawList->AddCircleFilled(ImVec2(frame_bb_drag.Max.x, vCursorPos.y), 2.0f, uOrange, 3);
+		pDrawList->AddCircleFilled(ImVec2(framePadBB.Max.x, vCursorPos.y), 2.0f, uOrange, 3);
 		// Handle Right::Y
 		if (fScaleY > fYLimit)
-			pDrawList->AddLine(ImVec2(frame_bb_drag.Max.x, frame_bb_drag.Min.y), ImVec2(frame_bb_drag.Max.x, vCursorPos.y - fCursorOff), uBlue, border_thickness);
+			pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Min.y), ImVec2(framePadBB.Max.x, vCursorPos.y - fCursorOff), uBlue, borderThickness);
 		if (fScaleY < 1.0f - fYLimit)
-			pDrawList->AddLine(ImVec2(frame_bb_drag.Max.x, frame_bb_drag.Max.y), ImVec2(frame_bb_drag.Max.x, vCursorPos.y + fCursorOff), uBlue, border_thickness);
+			pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Max.y), ImVec2(framePadBB.Max.x, vCursorPos.y + fCursorOff), uBlue, borderThickness);
 		// Borders::Top
-		pDrawList->AddCircleFilled(ImVec2(vCursorPos.x, frame_bb_drag.Min.y), 2.0f, uOrange, 3);
+		pDrawList->AddCircleFilled(ImVec2(vCursorPos.x, framePadBB.Min.y), 2.0f, uOrange, 3);
 		if (fScaleX > fXLimit)
-			pDrawList->AddLine(ImVec2(frame_bb_drag.Min.x, frame_bb_drag.Min.y), ImVec2(vCursorPos.x - fCursorOff, frame_bb_drag.Min.y), uBlue, border_thickness);
+			pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Min.y), ImVec2(vCursorPos.x - fCursorOff, framePadBB.Min.y), uBlue, borderThickness);
 		if (fScaleX < 1.0f - fXLimit)
-			pDrawList->AddLine(ImVec2(frame_bb_drag.Max.x, frame_bb_drag.Min.y), ImVec2(vCursorPos.x + fCursorOff, frame_bb_drag.Min.y), uBlue, border_thickness);
+			pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Min.y), ImVec2(vCursorPos.x + fCursorOff, framePadBB.Min.y), uBlue, borderThickness);
 		// Borders::Left
-		pDrawList->AddCircleFilled(ImVec2(frame_bb_drag.Min.x, vCursorPos.y), 2.0f, uOrange, 3);
+		pDrawList->AddCircleFilled(ImVec2(framePadBB.Min.x, vCursorPos.y), 2.0f, uOrange, 3);
 		if (fScaleY > fYLimit)
-			pDrawList->AddLine(ImVec2(frame_bb_drag.Min.x, frame_bb_drag.Min.y), ImVec2(frame_bb_drag.Min.x, vCursorPos.y - fCursorOff), uBlue, border_thickness);
+			pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Min.y), ImVec2(framePadBB.Min.x, vCursorPos.y - fCursorOff), uBlue, borderThickness);
 		if (fScaleY < 1.0f - fYLimit)
-			pDrawList->AddLine(ImVec2(frame_bb_drag.Min.x, frame_bb_drag.Max.y), ImVec2(frame_bb_drag.Min.x, vCursorPos.y + fCursorOff), uBlue, border_thickness);
+			pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Max.y), ImVec2(framePadBB.Min.x, vCursorPos.y + fCursorOff), uBlue, borderThickness);
 		// Borders::Bottom
-		pDrawList->AddCircleFilled(ImVec2(vCursorPos.x, frame_bb_drag.Max.y), 2.0f, uOrange, 3);
+		pDrawList->AddCircleFilled(ImVec2(vCursorPos.x, framePadBB.Max.y), 2.0f, uOrange, 3);
 		// Handle Bottom::X
 		if (fScaleX > fXLimit)
-			pDrawList->AddLine(ImVec2(frame_bb_drag.Min.x, frame_bb_drag.Max.y), ImVec2(vCursorPos.x - fCursorOff, frame_bb_drag.Max.y), uBlue, border_thickness);
+			pDrawList->AddLine(ImVec2(framePadBB.Min.x, framePadBB.Max.y), ImVec2(vCursorPos.x - fCursorOff, framePadBB.Max.y), uBlue, borderThickness);
 		if (fScaleX < 1.0f - fXLimit)
-			pDrawList->AddLine(ImVec2(frame_bb_drag.Max.x, frame_bb_drag.Max.y), ImVec2(vCursorPos.x + fCursorOff, frame_bb_drag.Max.y), uBlue, border_thickness);
+			pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Max.y), ImVec2(vCursorPos.x + fCursorOff, framePadBB.Max.y), uBlue, borderThickness);
 	
 		// #endregion PAD
 		
-		window->DC.CursorPos = frame_bb_dragX.GetBL() + ImVec2(0., GetFrameHeight());
+		window->DC.CursorPos = framePadHBB.GetBL() + ImVec2(0., GetFrameHeight());
 		PushStyleColor(ImGuiCol_Text, GetColorU32(ImGuiCol_TextDisabled));
 		Text("Press Ctrl to move the third dimension");
 		PopStyleColor();
 
-		window->DC.CursorPosPrevLine = total_bb.Max;
-		window->DC.CursorPos = total_bb.Max;
+		window->DC.CursorPosPrevLine = totalBB.Max;
+		window->DC.CursorPos = totalBB.Max;
 
 		NewLine();
 
 
 
-		return value_changedX || value_changedY || value_changedZ;
+		return valuePadHChanged || valuePadVChanged || valueSliderChanged;
 	}
 
 
@@ -284,30 +277,30 @@ namespace ImGui
 		if (!ImGui::ItemAdd(containerBB, id, &bb, 0))
 			return false;
 
-		bool value_change = false;
+		bool valueChanged = false;
 
 		ImRect expandedBB(bb.Min-ImVec2(grabRadius, grabRadius), bb.Max+ ImVec2(grabRadius, grabRadius));
 		bool hovered = ImGui::ItemHoverable( expandedBB, id, g.LastItemData.ItemFlags);
 
 		bool clicked = hovered && ImGui::IsMouseClicked(0, ImGuiInputFlags_None, id);
-		bool make_active = (clicked || g.NavActivateId == id);
-		if (make_active && clicked)
+		bool makeActive = (clicked || g.NavActivateId == id);
+		if (makeActive && clicked)
 			ImGui::SetKeyOwner(ImGuiKey_MouseLeft, id);
 
-		if (make_active)
+		if (makeActive)
 		{
 			ImGui::SetActiveID(id, window);
 			ImGui::SetFocusID(id, window);
 			ImGui::FocusWindow(window);
 			g.ActiveIdUsingNavDirMask |= (1 << ImGuiDir_Left) | (1 << ImGuiDir_Right);
 		}
-		ImU32 frame_col1 = ImGui::GetColorU32(ImGuiCol_FrameBgHovered);
+		ImU32 frameColor = ImGui::GetColorU32(ImGuiCol_FrameBgHovered);
 
 		ImGui::RenderNavCursor(bb, id);
-		ImGui::RenderFrame(bb.Min, bb.Max, frame_col1, true, g.Style.FrameRounding);
+		ImGui::RenderFrame(bb.Min, bb.Max, frameColor, true, g.Style.FrameRounding);
 
 		// Render grab
-		value_change = ImGui::SliderBehavior(bb, id, ImGuiDataType_Double, p_value, p_min, p_max, NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | flags, &grabBB);
+		valueChanged = ImGui::SliderBehavior(bb, id, ImGuiDataType_Double, p_value, p_min, p_max, NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | flags, &grabBB);
 		window->DrawList->AddCircleFilled(grabBB.GetCenter(), grabRadius * 1.2f, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_Button));
 		window->DrawList->AddCircleFilled(grabBB.GetCenter(), grabRadius, GetColorU32(ImGuiCol_SliderGrab));
 
@@ -353,7 +346,7 @@ namespace ImGui
 			ImGui::EndPopup();
 		}
 
-		return value_change;
+		return valueChanged;
 	}
 
 
