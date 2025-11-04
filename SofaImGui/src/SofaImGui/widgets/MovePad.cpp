@@ -129,9 +129,9 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
     // #region PAD
     bool hovered = ImGui::ItemHoverable(framePadBB, idPad, g.LastItemData.ItemFlags);
 
-    bool clicked = hovered && ImGui::IsMouseClicked(0, ImGuiInputFlags_None, idPad);
-    bool makeActive = (clicked || g.NavActivateId == idPad);
-    if (makeActive && clicked)
+    bool padPressed = hovered && ImGui::IsMouseDown(0, idPad);
+    bool makeActive = (padPressed || g.NavActivateId == idPad);
+    if (makeActive && padPressed)
         ImGui::SetKeyOwner(ImGuiKey_MouseLeft, idPad);
 
     if (makeActive)
@@ -154,8 +154,7 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
 
     if (ImGui::IsKeyPressed(ImGuiKey_LeftCtrl, false))
     {
-        // When setting the mouse position, the value is relative to the window top left corner
-        // Thus we need to compute the shifts between this position and the top left corner of the current window area
+        // With setMousePos, the parameter value is relative to the window top left corner
         m_mousePosPad = ImGui::GetIO().MousePos; // save mouse position when pressing ctrl
         const auto &center = m_grabBBSlider.GetCenter();
         baseGUI->setMousePos(center.x - wpos.x, center.y - wpos.y); // Needed for Wayland
@@ -187,6 +186,15 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
                                                 (m_flippedAxis["PadV"]) ? &m_maxValues["PadV"] : &m_minValues["PadV"],
                                                 (m_flippedAxis["PadV"]) ? &m_minValues["PadV"] : &m_maxValues["PadV"],
                                                  NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Vertical, &m_grabPad);
+
+
+        if (hovered)
+        {
+            ImGui::SetKeyOwner(ImGuiKey_MouseWheelY, idPad);
+            *m_values["Slider"] += ImGui::GetIO().MouseWheel;
+            valueSliderChanged = true;
+        }
+
         m_grabPad.Min.x = tempGrab.Min.x;
         m_grabPad.Max.x = tempGrab.Max.x;
         if (valuePadHChanged || valuePadVChanged)
@@ -251,7 +259,7 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
 
     window->DC.CursorPos = framePadHBB.GetBL() + ImVec2(0., GetFrameHeight());
     PushStyleColor(ImGuiCol_Text, GetColorU32(ImGuiCol_TextDisabled));
-    Text("Press Ctrl to move the third dimension");
+    Text("Press Ctrl or scroll to move the third dimension");
     PopStyleColor();
 
     window->DC.CursorPosPrevLine = totalBB.Max;
