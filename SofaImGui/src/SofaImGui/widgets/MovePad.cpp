@@ -1,5 +1,5 @@
 #define IMGUI_DEFINE_MATH_OPERATORS // import math operators
-#include "Pad3D.h"
+#include "MovePad.h"
 #include "Buttons.h"
 
 #include <IconsFontAwesome6.h>
@@ -9,12 +9,12 @@
 
 namespace ImGui
 {
-	Pad3D::Pad3D()
+	MovePad::MovePad()
 	{
 		m_label = "";
 	}
 
-	Pad3D::Pad3D(const char* label, const char* labelX, const char* labelY, const char* labelZ,
+	MovePad::MovePad(const char* label, const char* labelX, const char* labelY, const char* labelZ,
 		double* p_valueX, double* p_valueY, double* p_valueZ,
 		const double* p_minX, const double* p_maxX,
 		const double* p_minY, const double* p_maxY,
@@ -43,7 +43,7 @@ namespace ImGui
 	/**
 	* This widget is composed of a 2D pad and a vertical slider for the remaining dimension
 	**/
-	bool Pad3D::showPad3D()
+	bool MovePad::showPad3D()
 	{
 		ImGuiWindow* window = ImGui::GetCurrentWindow();
 		if (window->SkipItems)
@@ -57,11 +57,13 @@ namespace ImGui
 		ImGuiID idZ = window->GetID(idY);
 
 		// TODO: Move those to style
+		float grabThickness = style.ScrollbarSize / 5.f;
+		float grabRadius = grabThickness * 2.5f;
 		double downScale = 0.8f;
 		double dragX_placement = 0.1f;
 		double dragY_placement = 0.1f;
-		double dragX_thickness = 8.0f;
-		double dragY_thickness = 8.0f;
+		double dragX_thickness = grabThickness;
+		double dragY_thickness = grabThickness;
 		double border_thickness = 2.0f;
 		double line_thickness = 2.0f;
 		double text_lerp_x = 0.5f;
@@ -74,27 +76,29 @@ namespace ImGui
 		ImU32 uOrange = ImGui::GetColorU32(ImGuiCol_Button);
 		double fCursorOff = 16.0f;
 		const double w = std::min(window->WorkRect.GetWidth(), ImGui::GetWindowSize().y);
+		const auto slidersRegionWidth = GetFrameHeight() * 8;
 
-		PushStyleColor(ImGuiCol_Text, GetColorU32(ImGuiCol_TextDisabled));
-		Text("Press Ctrl to move the third dimension");
-		PopStyleColor();
-		const ImRect total_bb(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x, window->DC.CursorPos.y + w - GetFrameHeight() * 8));
+
+		const ImRect total_bb(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x, window->DC.CursorPos.y + w - slidersRegionWidth));
+		//ImGui::RenderFrame(total_bb.Min, total_bb.Max, GetColorU32(ImGuiCol_Button), true, g.Style.FrameRounding);
 		
 		const ImVec2 containerSize = ImVec2(total_bb.GetWidth() * downScale, total_bb.GetHeight() - GetFrameHeight()*2.5);
-		const ImRect frame_bb(total_bb.Min + ImVec2((total_bb.GetWidth() - containerSize.x) / 2.0f, GetFrameHeight()),
-			total_bb.Min + ImVec2((total_bb.GetWidth() - containerSize.x) / 2.0f, GetFrameHeight()) + containerSize);
+		const ImRect frame_bb(total_bb.GetCenter() - ImVec2( containerSize.x/2.0 , containerSize.y / 2.0 ),
+			total_bb.GetCenter() + ImVec2(containerSize.x / 2.0, containerSize.y / 2.0));
+		//ImGui::RenderFrame(frame_bb.Min, frame_bb.Max, GetColorU32(ImGuiCol_ButtonHovered), true, g.Style.FrameRounding);
 
-		int padSize = frame_bb.GetWidth() - GetFrameHeight() * 8;
-		padSize = std::min(frame_bb.GetHeight(), std::max((float)padSize, frame_bb.GetWidth()));
-		auto padwidth = padSize + GetFrameHeight() * 8;
-		const ImRect frame_bb_drag(frame_bb.Min + ImVec2( (frame_bb.GetWidth() - padwidth)/2.0f, 0.0f), frame_bb.Min + ImVec2((frame_bb.GetWidth() - padwidth) / 2.0f, 0.0f) + ImVec2(padSize, padSize));
+		int padSize = frame_bb.GetWidth() - slidersRegionWidth;
+		padSize = std::min(frame_bb.GetHeight(), std::max((float)padSize, frame_bb.GetWidth() - slidersRegionWidth));
+		auto padwidth = padSize + slidersRegionWidth + GetFrameHeight();
+		const ImRect frame_bb_drag(frame_bb.GetCenter() - ImVec2(padwidth/2. - GetFrameHeight(), padSize / 2.),
+			frame_bb.GetCenter() - ImVec2(padwidth / 2. - GetFrameHeight(), padSize / 2.) + ImVec2(padSize, padSize));
 
-		const ImRect frame_bb_dragX(ImVec2(frame_bb_drag.Min.x, frame_bb_drag.Max.y+style.FramePadding.y),
-			ImVec2(frame_bb_drag.Max.x, frame_bb_drag.Max.y + style.FramePadding.y + dragX_thickness));
-		const ImRect frame_bb_dragY(ImVec2(ImLerp(frame_bb_drag.Max.x, frame_bb.Max.x, dragY_placement), frame_bb_drag.Min.y),
-			ImVec2(ImLerp(frame_bb_drag.Max.x, frame_bb.Max.x, dragY_placement) + dragY_thickness, frame_bb_drag.Max.y));
-		const ImRect frame_bb_dragZ(ImVec2(frame_bb_dragY.Max.x + GetFrameHeight() * 4, frame_bb_drag.Min.y),
-			ImVec2(frame_bb_dragY.Max.x + GetFrameHeight() * 4 + dragY_thickness, frame_bb_drag.Max.y));
+		const ImRect frame_bb_dragX(ImVec2(frame_bb_drag.Min.x, frame_bb_drag.Max.y+style.FramePadding.y * 2),
+			ImVec2(frame_bb_drag.Max.x, frame_bb_drag.Max.y + style.FramePadding.y * 2 + dragX_thickness));
+		const ImRect frame_bb_dragY(ImVec2(frame_bb_drag.Max.x+style.FramePadding.x * 2, frame_bb_drag.Min.y),
+			ImVec2(frame_bb_drag.Max.x + style.FramePadding.x * 2 + dragY_thickness, frame_bb_drag.Max.y));
+		const ImRect frame_bb_dragZ(ImVec2(frame_bb_dragY.Max.x + slidersRegionWidth/2., frame_bb_drag.Min.y),
+			ImVec2(frame_bb_dragY.Max.x + slidersRegionWidth/2. + dragY_thickness, frame_bb_drag.Max.y));
 
 		double fXLimit = fCursorOff / frame_bb_drag.GetWidth();
 		double fYLimit = fCursorOff / frame_bb_drag.GetHeight();
@@ -208,7 +212,9 @@ namespace ImGui
 		char const* formatY = ImGui::DataTypeGetInfo(ImGuiDataType_Double)->PrintFmt;
 
 		// Cursor
-		pDrawList->AddCircleFilled(vCursorPos, cursor_radius, uBlue, cursor_segments);
+		//pDrawList->AddCircleFilled(vCursorPos, cursor_radius, uBlue, cursor_segments);
+		window->DrawList->AddCircleFilled(vCursorPos, grabRadius * 1.2f, GetColorU32(g.ActiveId == idXY ? ImGuiCol_SliderGrabActive : ImGuiCol_Button));
+		window->DrawList->AddCircleFilled(vCursorPos, grabRadius, GetColorU32(ImGuiCol_SliderGrab));
 
 		// Vertical Line
 		if (fScaleY > 2.0f * fYLimit)
@@ -250,30 +256,38 @@ namespace ImGui
 			pDrawList->AddLine(ImVec2(frame_bb_drag.Max.x, frame_bb_drag.Max.y), ImVec2(vCursorPos.x + fCursorOff, frame_bb_drag.Max.y), uBlue, border_thickness);
 	
 		// #endregion PAD
+		
+		window->DC.CursorPos = frame_bb_dragX.GetBL() + ImVec2(0., GetFrameHeight());
+		PushStyleColor(ImGuiCol_Text, GetColorU32(ImGuiCol_TextDisabled));
+		Text("Press Ctrl to move the third dimension");
+		PopStyleColor();
 
 		window->DC.CursorPosPrevLine = total_bb.Max;
 		window->DC.CursorPos = total_bb.Max;
 
 		NewLine();
 
+
+
 		return value_changedX || value_changedY || value_changedZ;
 	}
 
 
-	bool Pad3D::show1DPadSlider(char const* label, double* p_value, const double* p_min, const double* p_max, const ImRect& bb, const ImRect& containerBB, ImRect& grabBB, const ImGuiID& id, ImGuiWindow* window, ImGuiSliderFlags flags)
+	bool MovePad::show1DPadSlider(char const* label, double* p_value, const double* p_min, const double* p_max, const ImRect& bb, const ImRect& containerBB, ImRect& grabBB, const ImGuiID& id, ImGuiWindow* window, ImGuiSliderFlags flags)
 	{
 		ImGuiContext& g = *GImGui;
 		const ImGuiStyle& style = g.Style;
 		ImU32 const uTextCol = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]);
-
-		ImGui::PushStyleColor(ImGuiCol_SliderGrab, GetColorU32(ImGuiCol_FrameBgActive));
+		float grabThickness = style.ScrollbarSize / 5.f;
+		float grabRadius = grabThickness * 2.5f;
 
 		if (!ImGui::ItemAdd(containerBB, id, &bb, 0))
 			return false;
 
 		bool value_change = false;
 
-		bool hovered = ImGui::ItemHoverable(bb, id, g.LastItemData.ItemFlags);
+		ImRect expandedBB(bb.Min-ImVec2(grabRadius, grabRadius), bb.Max+ ImVec2(grabRadius, grabRadius));
+		bool hovered = ImGui::ItemHoverable( expandedBB, id, g.LastItemData.ItemFlags);
 
 		bool clicked = hovered && ImGui::IsMouseClicked(0, ImGuiInputFlags_None, id);
 		bool make_active = (clicked || g.NavActivateId == id);
@@ -294,29 +308,34 @@ namespace ImGui
 
 		// Render grab
 		value_change = ImGui::SliderBehavior(bb, id, ImGuiDataType_Double, p_value, p_min, p_max, NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | flags, &grabBB);
-		window->DrawList->AddRectFilled(grabBB.Min, grabBB.Max, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), style.GrabRounding);
+		window->DrawList->AddCircleFilled(grabBB.GetCenter(), grabRadius * 1.2f, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_Button));
+		window->DrawList->AddCircleFilled(grabBB.GetCenter(), grabRadius, GetColorU32(ImGuiCol_SliderGrab));
 
-		// Add Buttons
-		window->DC.CursorPos = ((flags & ImGuiSliderFlags_Vertical) == ImGuiSliderFlags_Vertical) ? ImVec2(grabBB.Max.x + style.FramePadding.x, grabBB.GetCenter().y - GetFrameHeight() / 2.0f) : ImVec2(grabBB.GetCenter().x-GetFrameHeight()/2.0f, grabBB.Max.y);
+		// Add Button
+		window->DC.CursorPos = ((flags & ImGuiSliderFlags_Vertical) == ImGuiSliderFlags_Vertical) ? ImVec2(grabBB.Max.x + 2*style.FramePadding.x, grabBB.GetCenter().y - GetFrameHeight() / 2.0f) : ImVec2(grabBB.GetCenter().x-GetFrameHeight()/2.0f, grabBB.Max.y);
 		bool showOtherAxis = false;
 
 		PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-		PushStyleColor(ImGuiCol_ButtonHovered, GetColorU32(ImGuiCol_HeaderHovered));
+		PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+		PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 		PushStyleColor(ImGuiCol_ButtonText, GetColorU32(ImGuiCol_Text));
 		ImGui::AlignTextToFramePadding();
 		const ImVec4& color = ImVec4(label=="X"?1.0f:0.0f, label == "Y" ? 1.0f : 0.0f, label == "Z" ? 1.0f : 0.0f, 1.0f);
-		ImVec2 size(1.0f, ImGui::GetFrameHeight());
-		ImGui::GetWindowDrawList()->AddRectFilled(window->DC.CursorPos,
-			window->DC.CursorPos+size,
-			ImGui::GetColorU32(color), ImGuiStyleVar_FrameRounding);
-		if (ImGui::Button((std::string(label) + ICON_FA_CARET_DOWN).c_str(), ImVec2(GetFrameHeight(), GetFrameHeight())))
+		ImVec2 size(1.0f, ImGui::GetFrameHeight	()/2.);
+		ImGui::GetWindowDrawList()->AddRectFilled(window->DC.CursorPos + ImVec2(0.0f, size.y / 2.),
+			window->DC.CursorPos + ImVec2(0.0f, size.y / 2.) +size,
+			ImGui::GetColorU32(color), ImGuiStyleVar_FrameRounding); // draw colored axis line in before button
+		
+		if (ImGui::Button((std::string(label)+ " " + ICON_FA_CARET_DOWN).c_str(), ImVec2(GetFrameHeight(), GetFrameHeight())))
 		{
 			showOtherAxis = true;
 		}
-		PopStyleColor(3);
+		PopStyleColor(4);
 		SameLine();
+		window->DC.CursorPos -= ImVec2(style.FramePadding.x, 0.);
 		Text(std::format("{:.3f}", *p_value).c_str());
 
+		// Add popup
 		auto idPopup = "##ChangeAxis" + std::string(label);
 		if (showOtherAxis)
 		{
@@ -334,12 +353,11 @@ namespace ImGui
 			ImGui::EndPopup();
 		}
 
-		ImGui::PopStyleColor();
 		return value_change;
 	}
 
 
-	void Pad3D::swapAxis(const char* axisLabel, int axisIndexToSwap)
+	void MovePad::swapAxis(const char* axisLabel, int axisIndexToSwap)
 	{
 		auto axis = getMappedAxis(axisLabel);
 		auto swappingAxis = getMappedAxis(m_axis[axisIndexToSwap]);
@@ -365,7 +383,7 @@ namespace ImGui
 	}
 
 
-	const char* Pad3D::getMappedAxis(const char* axis)
+	const char* MovePad::getMappedAxis(const char* axis)
 	{
 		for (auto [key, value] : m_mappedAxis)
 		{

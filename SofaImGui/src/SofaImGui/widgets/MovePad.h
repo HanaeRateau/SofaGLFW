@@ -4,22 +4,14 @@
 #include <imgui_internal.h>
 #include <map>
 
-
-enum Pad3DAxis
-{
-	X_AXIS,
-	Y_AXIS,
-	Z_AXIS
-};
-
 namespace ImGui
 {
-	class Pad3D
+	class MovePad
 	{
 	public:
-		Pad3D();
+		MovePad();
 
-		Pad3D(const char* label, const char* labelX, const char* labelY, const char* labelZ,
+		MovePad(const char* label, const char* labelX, const char* labelY, const char* labelZ,
 			double* p_valueX, double* p_valueY, double* p_valueZ,
 			const double* p_minX, const double* p_maxX, 
 			const double* p_minY, const double* p_maxY,

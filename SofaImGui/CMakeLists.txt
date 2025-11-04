@@ -121,7 +121,7 @@ set(HEADER_FILES
     ${SOFAIMGUI_SOURCE_DIR}/widgets/MaterialWidget.h
     ${SOFAIMGUI_SOURCE_DIR}/widgets/LinearSpringWidget.h
     ${SOFAIMGUI_SOURCE_DIR}/widgets/ScalarWidget.h
-    ${SOFAIMGUI_SOURCE_DIR}/widgets/Pad3D.h
+    ${SOFAIMGUI_SOURCE_DIR}/widgets/MovePad.h
     ${SOFAIMGUI_SOURCE_DIR}/widgets/IntWidget.h
     ${SOFAIMGUI_SOURCE_DIR}/widgets/RigidMass.h
 
@@ -172,7 +172,7 @@ set(SOURCE_FILES
 
     ${SOFAIMGUI_SOURCE_DIR}/widgets/Buttons.cpp
     ${SOFAIMGUI_SOURCE_DIR}/widgets/MaterialWidget.cpp
-    ${SOFAIMGUI_SOURCE_DIR}/widgets/Pad3D.cpp
+    ${SOFAIMGUI_SOURCE_DIR}/widgets/MovePad.cpp
 
     ${SOFAIMGUI_SOURCE_DIR}/menus/FileMenu.cpp
     ${SOFAIMGUI_SOURCE_DIR}/menus/ViewMenu.cpp

@@ -29,7 +29,7 @@
 #include <SofaImGui/widgets/Buttons.h>
 #include <SofaImGui/FooterStatusBar.h>
 
-#include <SofaImGui/widgets/Pad3D.h>
+//#include <SofaImGui/widgets/MovePad.h>
 
 namespace sofaimgui::windows {
 
@@ -41,7 +41,7 @@ MoveWindow::MoveWindow(const std::string& name,
     m_isOpen = isWindowOpen;
     m_isDrivingSimulation = true;
 
-    m_movePad = ImGui::Pad3D("XY Plan", "X", "Y", "Z",
+    m_movePad = ImGui::MovePad("XY Plan", "X", "Y", "Z",
         &m_x, &m_y, &m_z,
         &m_TCPMinPosition, &m_TCPMaxPosition,
         &m_TCPMinPosition, &m_TCPMaxPosition,
@@ -120,7 +120,7 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
                 {
                     static int tcpPosMethod = 0;
                     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
-                    ImGui::Combo("Method", &tcpPosMethod, "Pad3D\0Sliders");
+                    ImGui::Combo("", &tcpPosMethod, "Pad\0Sliders");
                     ImGui::PopStyleVar();
 
                     const auto &initPosition = m_IPController->getTCPTargetInitPosition();
