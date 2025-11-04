@@ -307,9 +307,9 @@ bool MovePad::show1DPadSlider(char const* label,
         PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
         PushStyleColor(ImGuiCol_ButtonText, GetColorU32(ImGuiCol_Text));
         ImGui::AlignTextToFramePadding();
-        const ImVec4& color = ImVec4(strcmp(label, "X")? 1.0f : 0.0f,
-                                     strcmp(label, "Y")? 1.0f : 0.0f,
-                                     strcmp(label, "Z")? 1.0f : 0.0f,
+        const ImVec4& color = ImVec4(strcmp(label, "X")==0? 1.0f : 0.0f,
+                                     strcmp(label, "Y")==0? 1.0f : 0.0f,
+                                     strcmp(label, "Z")==0? 1.0f : 0.0f,
                                      1.0f);
         ImVec2 size(1.0f, ImGui::GetFrameHeight	()/2.);
         ImGui::GetWindowDrawList()->AddRectFilled(window->DC.CursorPos + ImVec2(0.0f, size.y / 2.),
