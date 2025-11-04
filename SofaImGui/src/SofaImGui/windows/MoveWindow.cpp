@@ -120,7 +120,9 @@ void MoveWindow::showWindow(const ImGuiWindowFlags &windowFlags)
                 {
                     static int tcpPosMethod = 0;
                     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
+                    ImGui::PushItemWidth(ImGui::CalcTextSize("Sliders").x + ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetTextLineHeightWithSpacing());
                     ImGui::Combo("", &tcpPosMethod, "Pad\0Sliders");
+                    ImGui::PopItemWidth();
                     ImGui::PopStyleVar();
 
                     const auto &initPosition = m_IPController->getTCPTargetInitPosition();
