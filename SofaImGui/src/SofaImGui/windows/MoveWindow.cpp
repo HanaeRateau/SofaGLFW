@@ -40,6 +40,7 @@ MoveWindow::MoveWindow(const std::string& name,
     m_name = name;
     m_isOpen = isWindowOpen;
     m_isDrivingSimulation = true;
+    m_moveType = MoveType::SLIDERS;
 
     m_movePad = ImGui::MovePad("##MovePad", "X", "Z", "Y",
                                 &m_x, &m_z, &m_y,
@@ -125,10 +126,10 @@ void MoveWindow::showWindow(sofaglfw::SofaGLFWBaseGUI* baseGUI, const ImGuiWindo
                         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TabHovered));
                         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TabActive));
 
-                        if (showVerticalTabs(ICON_FA_TABLE_CELLS_LARGE, "Pad", m_moveType == MoveType::PAD))
-                            m_moveType = MoveType::PAD;
                         if (showVerticalTabs(ICON_FA_SLIDERS, "Sliders", m_moveType == MoveType::SLIDERS))
                             m_moveType = MoveType::SLIDERS;
+                        if (showVerticalTabs(ICON_FA_TABLE_CELLS_LARGE, "Pad", m_moveType == MoveType::PAD))
+                            m_moveType = MoveType::PAD;
 
                         ImGui::PopStyleColor(3);
                         ImGui::PopStyleVar();
