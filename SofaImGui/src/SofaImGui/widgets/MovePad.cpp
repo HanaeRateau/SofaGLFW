@@ -37,7 +37,7 @@ MovePad::MovePad(const char* label, const char* labelPadH, const char* labelPadV
 /**
 * This widget is composed of a 2D pad and a vertical slider for the remaining dimension
 **/
-bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
+bool MovePad::showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI)
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if (window->SkipItems)
@@ -135,7 +135,7 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
         }
         ImGui::PopStyleColor();
     }
-    // #region PAD
+
     bool hovered = ImGui::ItemHoverable(framePadBB, idPad, g.LastItemData.ItemFlags);
 
     bool padPressed = hovered && ImGui::IsMouseDown(0, idPad);
@@ -265,7 +265,6 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
         if (fScaleX < 1.0f - fXLimit)
             pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Max.y), ImVec2(vCursorPos.x + fCursorOff, framePadBB.Max.y), padBorderColor, borderThickness);
     }
-    // #endregion PAD
 
     window->DC.CursorPos = framePadHBB.GetBL() + ImVec2(0., GetFrameHeight());
     PushStyleColor(ImGuiCol_Text, GetColorU32(ImGuiCol_TextDisabled));

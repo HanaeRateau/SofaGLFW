@@ -98,7 +98,7 @@ class SOFAIMGUI_API MoveWindow : public BaseWindow
     void showOptions();
     void showWeightOption(const int &index);
     void showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI);
-    bool showVerticalTabs(const std::string& label, const std::string& tooltip, const bool &active);
+    bool showVerticalTab(const std::string& label, const std::string& tooltip, const bool &active);
 };
 
 }

@@ -29,8 +29,6 @@
 #include <SofaImGui/widgets/Buttons.h>
 #include <SofaImGui/FooterStatusBar.h>
 
-//#include <SofaImGui/widgets/MovePad.h>
-
 namespace sofaimgui::windows {
 
 MoveWindow::MoveWindow(const std::string& name,
@@ -121,18 +119,12 @@ void MoveWindow::showWindow(sofaglfw::SofaGLFWBaseGUI* baseGUI, const ImGuiWindo
                 {
                     { // Vertical tabs (buttons)
                         ImGui::BeginChild("##MethodButtonsArea", ImVec2(ImGui::GetFrameHeight() * 1.5, 0), ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoScrollbar);
-                        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, ImGui::GetStyle().FrameRounding/2.);
-                        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_Tab));
-                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TabHovered));
-                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TabActive));
 
-                        if (showVerticalTabs(ICON_FA_SLIDERS, "Sliders", m_moveType == MoveType::SLIDERS))
+                        if (showVerticalTab(ICON_FA_SLIDERS, "Sliders", m_moveType == MoveType::SLIDERS))
                             m_moveType = MoveType::SLIDERS;
-                        if (showVerticalTabs(ICON_FA_TABLE_CELLS_LARGE, "Pad", m_moveType == MoveType::PAD))
+                        if (showVerticalTab(ICON_FA_TABLE_CELLS_LARGE, "Pad", m_moveType == MoveType::PAD))
                             m_moveType = MoveType::PAD;
 
-                        ImGui::PopStyleColor(3);
-                        ImGui::PopStyleVar();
                         ImGui::EndChild();
                     }
 
@@ -392,11 +384,16 @@ void MoveWindow::showWeightOption(const int &i)
 
 void MoveWindow::showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI)
 {
-    m_movePad.showPad3D(baseGUI);
+    m_movePad.showPad(baseGUI);
 }
 
-bool MoveWindow::showVerticalTabs(const std::string& label, const std::string& tooltip, const bool& active)
+bool MoveWindow::showVerticalTab(const std::string& label, const std::string& tooltip, const bool& active)
 {
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, ImGui::GetStyle().FrameRounding/2.);
+    ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_Tab));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TabHovered));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TabActive));
+
     const ImVec2 buttonSize = ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight());
     bool clicked = false;
 
@@ -416,6 +413,9 @@ bool MoveWindow::showVerticalTabs(const std::string& label, const std::string& t
         ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical, 2.f);
         ImGui::PopStyleColor();
     }
+
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar();
 
     return clicked;
 }

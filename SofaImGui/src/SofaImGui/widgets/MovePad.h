@@ -20,7 +20,7 @@ public:
         const double* minPadV, const double* maxPadV,
         const double* minSlider, const double* maxSlider);
 
-    bool showPad3D(sofaglfw::SofaGLFWBaseGUI *baseGUI);
+    bool showPad(sofaglfw::SofaGLFWBaseGUI *baseGUI);
     void setBounds(const char* axis, const double& min, const double& max) { m_minValues[getMappedAxis(axis)] = min; m_maxValues[getMappedAxis(axis)] = max; }
 
 protected:
