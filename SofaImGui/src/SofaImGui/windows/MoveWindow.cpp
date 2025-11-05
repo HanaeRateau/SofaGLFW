@@ -41,11 +41,11 @@ MoveWindow::MoveWindow(const std::string& name,
     m_isOpen = isWindowOpen;
     m_isDrivingSimulation = true;
 
-    m_movePad = ImGui::MovePad("XY Plan", "X", "Y", "Z",
-        &m_x, &m_y, &m_z,
-        &m_TCPMinPosition, &m_TCPMaxPosition,
-        &m_TCPMinPosition, &m_TCPMaxPosition,
-        &m_TCPMinPosition, &m_TCPMaxPosition);
+    m_movePad = ImGui::MovePad("##MovePad", "X", "Z", "Y",
+                                &m_x, &m_z, &m_y,
+                                &m_TCPMinPosition, &m_TCPMaxPosition,
+                                &m_TCPMinPosition, &m_TCPMaxPosition,
+                                &m_TCPMinPosition, &m_TCPMaxPosition);
 }
 
 void MoveWindow::clearWindow()
@@ -116,35 +116,52 @@ void MoveWindow::showWindow(sofaglfw::SofaGLFWBaseGUI* baseGUI, const ImGuiWindo
                 if(m_isDrivingSimulation)
                     m_IPController->getTCPTargetPosition(m_x, m_y, m_z, m_rx, m_ry, m_rz);
                 
-                if (ImGui::LocalBeginCollapsingHeader(m_TCPPositionDescription.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                if (ImGui::CollapsingHeader(m_TCPPositionDescription.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                 {
-                    static int tcpPosMethod = 0;
-                    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
-                    ImGui::PushItemWidth(ImGui::CalcTextSize("Sliders").x + ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetTextLineHeightWithSpacing());
-                    ImGui::Combo("", &tcpPosMethod, "Pad\0Sliders");
-                    ImGui::PopItemWidth();
-                    ImGui::PopStyleVar();
+                    { // Vertical tabs (buttons)
+                        ImGui::BeginChild("##MethodButtonsArea", ImVec2(ImGui::GetFrameHeight() * 1.5, 0), ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoScrollbar);
+                        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, ImGui::GetStyle().FrameRounding/2.);
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_Tab));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TabHovered));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TabActive));
 
-                    const auto &initPosition = m_IPController->getTCPTargetInitPosition();
+                        if (showVerticalTabs(ICON_FA_TABLE_CELLS_LARGE, "Pad", m_moveType == MoveType::PAD))
+                            m_moveType = MoveType::PAD;
+                        if (showVerticalTabs(ICON_FA_SLIDERS, "Sliders", m_moveType == MoveType::SLIDERS))
+                            m_moveType = MoveType::SLIDERS;
 
-                    if (tcpPosMethod == 0)
-                    {
-                        m_movePad.setBounds("X", m_TCPMinPosition + initPosition[0], m_TCPMaxPosition + initPosition[0]);
-                        m_movePad.setBounds("Y", m_TCPMinPosition + initPosition[1], m_TCPMaxPosition + initPosition[1]);
-                        m_movePad.setBounds("Z", m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2]);
-                        showPad(baseGUI);
+                        ImGui::PopStyleColor(3);
+                        ImGui::PopStyleVar();
+                        ImGui::EndChild();
                     }
-                    if (tcpPosMethod == 1)
-                    {
-                        showSliderDouble("X", "##XSlider", "##XInput", &m_x, m_TCPMinPosition + initPosition[0], m_TCPMaxPosition + initPosition[0], ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-                        ImGui::Spacing();
-                        showSliderDouble("Y", "##YSlider", "##YInput", &m_y, m_TCPMinPosition + initPosition[1], m_TCPMaxPosition + initPosition[1], ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
-                        ImGui::Spacing();
-                        showSliderDouble("Z", "##ZSlider", "##ZInput", &m_z, m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2], ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
-                    }
-                    
-                    ImGui::LocalEndCollapsingHeader();
 
+                    ImGui::SameLine();
+
+                    { // Method area (sliders or pad)
+                        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetColorU32(ImGuiCol_TableRowBgAlt));
+                        ImGui::BeginChild("##MethodArea", ImVec2(ImGui::GetContentRegionAvail().x, 0), ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_AlwaysUseWindowPadding);
+                        const auto &initPosition = m_IPController->getTCPTargetInitPosition();
+
+                        if (m_moveType == MoveType::PAD)
+                        {
+                            m_movePad.setBounds("X", m_TCPMinPosition + initPosition[0], m_TCPMaxPosition + initPosition[0]);
+                            m_movePad.setBounds("Y", m_TCPMinPosition + initPosition[1], m_TCPMaxPosition + initPosition[1]);
+                            m_movePad.setBounds("Z", m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2]);
+                            showPad(baseGUI);
+                        }
+                        else if (m_moveType == MoveType::SLIDERS)
+                        {
+                            ImGui::Indent();
+                            showSliderDouble("X", "##XSlider", "##XInput", &m_x, m_TCPMinPosition + initPosition[0], m_TCPMaxPosition + initPosition[0], ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                            ImGui::Spacing();
+                            showSliderDouble("Y", "##YSlider", "##YInput", &m_y, m_TCPMinPosition + initPosition[1], m_TCPMaxPosition + initPosition[1], ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                            ImGui::Spacing();
+                            showSliderDouble("Z", "##ZSlider", "##ZInput", &m_z, m_TCPMinPosition + initPosition[2], m_TCPMaxPosition + initPosition[2], ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
+                            ImGui::Unindent();
+                        }
+                        ImGui::EndChild();
+                        ImGui::PopStyleColor();
+                    }
                 }
 
                 m_IPController->setFreeInRotation(m_freeRoll, m_freePitch, m_freeYaw);
@@ -374,9 +391,32 @@ void MoveWindow::showWeightOption(const int &i)
 
 void MoveWindow::showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI)
 {
-    // XY Pad
     m_movePad.showPad3D(baseGUI);
 }
 
+bool MoveWindow::showVerticalTabs(const std::string& label, const std::string& tooltip, const bool& active)
+{
+    const ImVec2 buttonSize = ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight());
+    bool clicked = false;
+
+    if (active)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_TabActive));
+    }
+
+    if (ImGui::Button(label.c_str(), buttonSize))
+        clicked = true;
+    ImGui::SetItemTooltip("%s", tooltip.c_str());
+
+    if (active)
+    {
+        ImGui::SameLine();
+        ImGui::AlignTextToFramePadding();
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical, 2.f);
+        ImGui::PopStyleColor();
+    }
+
+    return clicked;
+}
 }
 

@@ -53,6 +53,12 @@ class SOFAIMGUI_API MoveWindow : public BaseWindow
         float max{500};
     };
 
+    enum MoveType {
+        PAD,
+        SLIDERS
+    };
+    MoveType m_moveType;
+
     void clearWindow() override;
 
     void addAccessory(const Accessory &accessory) {m_accessories.push_back(accessory);}
@@ -92,6 +98,7 @@ class SOFAIMGUI_API MoveWindow : public BaseWindow
     void showOptions();
     void showWeightOption(const int &index);
     void showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI);
+    bool showVerticalTabs(const std::string& label, const std::string& tooltip, const bool &active);
 };
 
 }
