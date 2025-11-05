@@ -192,6 +192,7 @@ bool MovePad::showPad3D(sofaglfw::SofaGLFWBaseGUI* baseGUI)
         {
             ImGui::SetKeyOwner(ImGuiKey_MouseWheelY, idPad);
             *m_values["Slider"] += ImGui::GetIO().MouseWheel;
+            *m_values["Slider"] = std::max(m_minValues["Slider"], std::min(*m_values["Slider"], m_maxValues["Slider"]));
             valueSliderChanged = true;
         }
 
