@@ -137,9 +137,9 @@ bool MovePad::showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI)
         ImGui::PopStyleColor();
     }
 
-    bool hovered = ImGui::ItemHoverable(framePadBB, idPad, g.LastItemData.ItemFlags);
+    bool padHovered = ImGui::ItemHoverable(framePadBB, idPad, g.LastItemData.ItemFlags);
 
-    bool padPressed = hovered && ImGui::IsMouseDown(0, idPad);
+    bool padPressed = padHovered && ImGui::IsMouseDown(0, idPad);
     bool makeActive = (padPressed || g.NavActivateId == idPad);
     if (makeActive && padPressed)
         ImGui::SetKeyOwner(ImGuiKey_MouseLeft, idPad);
@@ -153,7 +153,7 @@ bool MovePad::showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI)
     }
 
     // Draw frame
-    ImU32 frameColor = ImGui::GetColorU32(g.ActiveId == idPad ? ImGuiCol_FrameBgHovered : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
+    ImU32 frameColor = ImGui::GetColorU32(g.ActiveId == idPad ? ImGuiCol_FrameBgHovered : padHovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
     ImGui::RenderNavCursor(framePadBB, idPad);
     ImGui::RenderFrame(framePadBB.Min, framePadBB.Max, frameColor, true, g.Style.FrameRounding);
 
@@ -162,7 +162,7 @@ bool MovePad::showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI)
     bool valuePadVChanged = false;
     bool valueSliderChanged = false;
 
-    if (ImGui::IsKeyPressed(ImGuiKey_LeftCtrl, false))
+    if (padHovered && ImGui::IsKeyPressed(ImGuiKey_LeftCtrl, false))
     {
         // With setMousePos, the parameter value is relative to the window top left corner
         m_mousePosPad = ImGui::GetIO().MousePos; // save mouse position when pressing ctrl
@@ -198,7 +198,7 @@ bool MovePad::showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI)
                                                  NULL, ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Vertical, &m_grabPad);
 
 
-        if (hovered)
+        if (padHovered)
         {
             ImGui::SetKeyOwner(ImGuiKey_MouseWheelY, idPad);
             *m_values["Slider"] += ImGui::GetIO().MouseWheel;
