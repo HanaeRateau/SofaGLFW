@@ -1,5 +1,6 @@
-#include <iomanip>
 #define IMGUI_DEFINE_MATH_OPERATORS // import math operators
+
+#include <SofaImGui/widgets/Widgets.h>
 #include <SofaImGui/widgets/MovePad.h>
 
 #include <IconsFontAwesome6.h>
@@ -59,7 +60,7 @@ bool MovePad::showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI)
     double borderThickness = 2.0f;
     double lineThickness = 2.0f;
     double fCursorOff = 16.0f;
-    const auto slidersRegionWidth = GetFrameHeight() * 7;
+    const auto slidersRegionWidth = GetFrameHeight() * 8;
 
     const ImRect totalBB(window->DC.CursorPos, ImVec2(window->WorkRect.Max.x,
                                                       window->DC.CursorPos.y + window->WorkRect.GetWidth()- slidersRegionWidth));
@@ -266,7 +267,7 @@ bool MovePad::showPad(sofaglfw::SofaGLFWBaseGUI* baseGUI)
             pDrawList->AddLine(ImVec2(framePadBB.Max.x, framePadBB.Max.y), ImVec2(vCursorPos.x + fCursorOff, framePadBB.Max.y), padBorderColor, borderThickness);
     }
 
-    window->DC.CursorPos = framePadHBB.GetBL() + ImVec2(0., GetFrameHeight());
+    window->DC.CursorPos = framePadHBB.GetBL() + ImVec2(0., GetFrameHeight() + style.FramePadding.y*2);
     PushStyleColor(ImGuiCol_Text, GetColorU32(ImGuiCol_TextDisabled));
     Text("Press Ctrl or scroll to move the third dimension");
     PopStyleColor();
@@ -323,7 +324,7 @@ bool MovePad::show1DPadSlider(char const* label,
 
     bool showOtherAxis = false;
     { // Add Button
-        window->DC.CursorPos = ((flags & ImGuiSliderFlags_Vertical) == ImGuiSliderFlags_Vertical) ? ImVec2(grabBB.Max.x + 2*style.FramePadding.x, grabBB.GetCenter().y - GetFrameHeight() / 2.0f) : ImVec2(grabBB.GetCenter().x-GetFrameHeight()/2.0f, grabBB.Max.y);
+        window->DC.CursorPos = ((flags & ImGuiSliderFlags_Vertical) == ImGuiSliderFlags_Vertical) ? ImVec2(grabBB.Max.x + 2*style.FramePadding.x, grabBB.GetCenter().y - GetFrameHeight() / 2.0f) : ImVec2(grabBB.GetCenter().x-GetFrameHeight()/2.0f, grabBB.Max.y + 2*style.FramePadding.y);
 
         PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
         PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -349,11 +350,8 @@ bool MovePad::show1DPadSlider(char const* label,
     SameLine();
 
     { // Slider value
-        window->DC.CursorPos -= ImVec2(style.FramePadding.x, 0.);
-        std::stringstream ss;
-        const int precision = (log10f(abs(p_max - p_min))>1)? 2: 3;
-        ss << std::fixed << std::setprecision(precision) << *p_value;
-        Text("%s", ss.str().c_str());
+        window->DC.CursorPos -= ImVec2(style.FramePadding.x * 2, 0.);
+        ImGui::LocalInputDouble(("##Value"+std::string(label)).c_str(), p_value);
     }
 
     // Add popup
